@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Manga Dojo">
+<meta name="theme-color" content="#f7f3e9">
+<title>Manga Dojo ⚡</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --cream:#f7f3e9;--black:#1a1a1a;--red:#cc2222;--gold:#d4a017;
+  --border:3px solid #1a1a1a;--shadow:4px 4px 0 #1a1a1a;
+  --font-t:'Bangers',cursive;--font-b:'M PLUS Rounded 1c',sans-serif;
+}
+html,body{height:100%;background:var(--cream);font-family:var(--font-b);overflow-x:hidden}
+#app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--cream);position:relative;overflow-x:hidden}
+
+/* HALFTONE */
+.ht{background-image:radial-gradient(circle,rgba(26,26,26,.12) 1px,transparent 1px);background-size:7px 7px}
+
+/* PANEL */
+.panel{border:var(--border);background:white;position:relative;overflow:hidden}
+.panel::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(26,26,26,.05) 1px,transparent 1px);background-size:6px 6px;pointer-events:none}
+
+/* SPEECH BUBBLES */
+.bub{border:3px solid var(--black);border-radius:10px;padding:8px 14px;display:inline-block;font-weight:700;position:relative}
+.bub-en{background:var(--black);color:var(--cream);font-family:var(--font-t);letter-spacing:.06em;font-size:1.5em}
+.bub-fr{background:white;color:var(--black);font-family:var(--font-b);font-weight:700;font-size:1em}
+.bub-en::after{content:'';position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top:12px solid var(--black)}
+
+/* BUTTONS */
+.btn{font-family:var(--font-t);font-size:1.25em;letter-spacing:.08em;padding:12px 20px;border:var(--border);box-shadow:var(--shadow);cursor:pointer;background:white;color:var(--black);transition:transform .1s,box-shadow .1s;display:inline-block;text-align:center;user-select:none;border-radius:0}
+.btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--black)}
+.btn-primary{background:var(--black);color:var(--cream)}
+.btn-red{background:var(--red);color:white}
+.btn-gold{background:var(--gold);color:var(--black)}
+.btn-green{background:#1a9944;color:white}
+.btn-block{width:100%;display:block}
+
+/* HUD */
+.hud{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:var(--border);background:white;position:sticky;top:0;z-index:100}
+.hearts{display:flex;gap:3px;font-size:1.3em}
+.heart-lost{filter:grayscale(1) opacity(.3)}
+.xp-bar-wrap{flex:1;height:14px;border:2px solid var(--black);border-radius:7px;overflow:hidden;background:white}
+.xp-fill{height:100%;background:var(--gold);transition:width .4s ease}
+.hud-score{font-family:var(--font-t);font-size:1.1em;letter-spacing:.05em;white-space:nowrap}
+
+/* PROGRESS */
+.dots{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;padding:6px 12px}
+.dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--black);background:white;transition:background .2s,border-color .2s;flex-shrink:0}
+.dot-ok{background:var(--black)}
+.dot-c{background:#1a9944;border-color:#1a9944}
+.dot-w{background:var(--red);border-color:var(--red)}
+.dot-cur{background:var(--gold);border-color:var(--gold)}
+
+/* PROGRESS BAR */
+.pbar{height:8px;background:#ddd;border:2px solid var(--black);border-radius:4px;overflow:hidden;margin:4px 16px}
+.pbar-fill{height:100%;background:var(--black);transition:width .3s ease}
+
+/* SCREEN TRANSITION */
+.screen{animation:sli .25s ease}
+@keyframes sli{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+
+/* FEEDBACK */
+.feedback-ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:200;pointer-events:none;animation:fbk .6s ease forwards}
+.feedback-ov.c{background:rgba(26,153,68,.12)}
+.feedback-ov.w{background:rgba(204,34,34,.12)}
+@keyframes fbk{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.fbanner{padding:18px 36px;border:4px solid var(--black);box-shadow:6px 6px 0 var(--black);font-family:var(--font-t);font-size:2em;letter-spacing:.1em;text-align:center;animation:fbkb .6s ease forwards}
+.fbanner.c{background:#1a9944;color:white}
+.fbanner.w{background:var(--red);color:white}
+@keyframes fbkb{0%{transform:scale(.5)}30%{transform:scale(1.05)}70%{transform:scale(1)}100%{transform:scale(.95);opacity:0}}
+
+/* ONOMATOPEIA */
+.onoma{position:fixed;font-family:var(--font-t);font-size:2.8em;letter-spacing:.1em;pointer-events:none;z-index:300;animation:ono .8s ease forwards;-webkit-text-stroke:2px var(--black)}
+.onoma.c{color:#1a9944}
+.onoma.w{color:var(--red)}
+@keyframes ono{0%{opacity:0;transform:scale(.5) rotate(-10deg)}30%{opacity:1;transform:scale(1.2) rotate(-5deg)}70%{opacity:1;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(.8) rotate(5deg) translateY(-40px)}}
+
+/* CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:5px;padding:8px 12px}
+.chip{padding:5px 10px;border:2px solid var(--black);font-family:var(--font-b);font-weight:700;font-size:.8em;cursor:pointer;background:white;transition:background .15s,color .15s;user-select:none;border-radius:3px}
+.chip.sel{background:var(--black);color:var(--cream)}
+
+/* ACCORDION */
+.acc-item{border:var(--border);margin-bottom:3px}
+.acc-h{padding:10px 14px;background:var(--black);color:var(--cream);font-family:var(--font-t);font-size:1em;letter-spacing:.05em;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.acc-b{display:none;padding:6px;background:white}
+.acc-b.open{display:block}
+.word-card{display:flex;border:2px solid var(--black);margin-bottom:3px;overflow:hidden}
+.word-en{background:var(--black);color:var(--cream);font-family:var(--font-t);letter-spacing:.05em;padding:7px 10px;flex:1;font-size:.95em}
+.word-fr{background:white;color:var(--black);font-family:var(--font-b);font-weight:700;padding:7px 10px;flex:1;border-left:2px solid var(--black);font-size:.85em;display:flex;align-items:center}
+.word-card.hi{outline:3px solid var(--gold)}
+
+/* FLASH CARD */
+.fc{border:var(--border);box-shadow:var(--shadow);background:white;margin:16px;transition:transform .3s}
+.fc-en{background:var(--black);color:var(--cream);font-family:var(--font-t);font-size:2.8em;letter-spacing:.05em;padding:40px 20px;text-align:center;line-height:1.1}
+.fc-fr{background:white;color:var(--black);font-family:var(--font-b);font-weight:700;font-size:1.3em;padding:18px;text-align:center;border-top:var(--border)}
+.fc-actions{position:sticky;bottom:0;background:var(--cream);border-top:var(--border);padding:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+
+/* EXERCISE */
+.ex-wrap{margin:12px}
+.ex-prompt{border:var(--border);background:white;padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.ex-type{font-size:.7em;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;text-align:center;margin-bottom:6px}
+.ex-q{font-family:var(--font-t);font-size:1.5em;letter-spacing:.05em;text-align:center}
+.ex-q .en{display:inline-block;background:var(--black);color:var(--cream);padding:4px 12px;margin-top:6px}
+.mcq-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.mcq-opt{padding:13px 8px;border:var(--border);background:white;font-family:var(--font-b);font-weight:700;font-size:.9em;cursor:pointer;text-align:center;user-select:none;min-height:52px;display:flex;align-items:center;justify-content:center;transition:background .1s}
+.mcq-opt:active{background:#eee}
+.mcq-opt.sc{background:#1a9944;color:white;border-color:#1a9944}
+.mcq-opt.sw{background:var(--red);color:white;border-color:var(--red)}
+.mcq-opt.show-c{background:#1a9944;color:white;border-color:#1a9944}
+.ft-inp{width:100%;padding:14px;border:var(--border);font-family:var(--font-t);font-size:1.5em;letter-spacing:.05em;text-align:center;background:white;outline:none;margin-top:10px}
+.ft-inp:focus{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+
+/* PAIR MATCHING */
+.pairs-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px}
+.pair-item{padding:11px 7px;border:var(--border);text-align:center;cursor:pointer;font-weight:700;font-size:.88em;min-height:48px;display:flex;align-items:center;justify-content:center;transition:background .15s;user-select:none;line-height:1.2}
+.pair-item.pi-en{background:var(--black);color:var(--cream);font-family:var(--font-t);letter-spacing:.05em}
+.pair-item.pi-fr{background:white;color:var(--black)}
+.pair-item.pi-sel{outline:3px solid var(--gold);transform:scale(1.02)}
+.pair-item.pi-ok{background:#1a9944;color:white;cursor:default;border-color:#1a9944}
+.pair-item.pi-bad{animation:shake .3s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* FILL BLANK */
+.fill-sent{font-size:1.05em;font-weight:700;line-height:1.7;text-align:center;padding:8px 4px}
+.fill-blank{display:inline-block;border-bottom:3px solid var(--black);min-width:70px;padding:2px 8px;font-family:var(--font-t);font-size:1.1em;vertical-align:bottom}
+
+/* MENU */
+.menu-logo{text-align:center;padding:16px 16px 6px}
+.menu-title{font-family:var(--font-t);font-size:3.5em;letter-spacing:.1em;color:var(--black);line-height:1;text-shadow:3px 3px 0 var(--red)}
+.menu-sub{font-size:.85em;font-weight:700;color:#666;margin-top:2px}
+.char-area{display:flex;justify-content:center;align-items:flex-end;height:155px;margin:8px 0;position:relative;overflow:hidden}
+.char-area svg{filter:drop-shadow(3px 3px 0 rgba(0,0,0,.2))}
+.char-bounce{animation:chb 2.2s ease-in-out infinite}
+@keyframes chb{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.theme-sel{display:flex;border:var(--border);margin:0 14px 10px;overflow:hidden}
+.tbtn{flex:1;padding:9px;font-family:var(--font-t);font-size:1em;letter-spacing:.05em;cursor:pointer;text-align:center;border:none;background:white;color:var(--black);transition:background .15s;user-select:none}
+.tbtn.act{background:var(--black);color:var(--cream)}
+.menu-btns{display:flex;flex-direction:column;gap:8px;padding:0 14px 14px}
+.unit-select-label{font-family:var(--font-t);font-size:1em;letter-spacing:.05em;padding:6px 14px 2px;color:#444}
+
+/* SCREEN HEADER */
+.sh{padding:11px 14px;border-bottom:var(--border);background:var(--black);color:var(--cream);font-family:var(--font-t);font-size:1.4em;letter-spacing:.08em;display:flex;justify-content:space-between;align-items:center}
+
+/* SEARCH */
+.srch-wrap{display:flex;border:var(--border);margin:8px;overflow:hidden}
+.srch-inp{flex:1;padding:9px 12px;border:none;font-family:var(--font-b);font-weight:700;font-size:.9em;background:white;outline:none}
+.srch-clr{padding:9px 12px;background:var(--black);color:var(--cream);border:none;cursor:pointer;font-family:var(--font-t);font-size:1.1em}
+
+/* ERROR REVIEW */
+.er-card{border:var(--border);margin:8px;overflow:hidden;box-shadow:3px 3px 0 var(--black)}
+.er-en{background:var(--black);color:var(--cream);font-family:var(--font-t);font-size:1.5em;letter-spacing:.05em;padding:10px 14px}
+.er-fr{background:white;padding:7px 14px;font-weight:700;border-top:var(--border)}
+.er-typed{background:#fff0f0;padding:5px 14px;font-size:.82em;color:var(--red);border-top:1px solid #eee}
+
+/* RESULTS */
+.res-stars{text-align:center;font-size:3em;padding:8px;letter-spacing:.1em}
+.rank-badge{border:var(--border);box-shadow:var(--shadow);background:var(--gold);color:var(--black);font-family:var(--font-t);font-size:2em;letter-spacing:.1em;padding:14px 28px;text-align:center;margin:14px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 14px}
+.stat-box{border:var(--border);background:white;padding:10px;text-align:center}
+.stat-num{font-family:var(--font-t);font-size:1.8em;letter-spacing:.05em}
+.stat-label{font-size:.78em;font-weight:700;color:#666}
+
+/* SUMMARY */
+.sum-sec{border:var(--border);margin:6px 14px;overflow:hidden}
+.sum-h{padding:7px 11px;font-family:var(--font-t);font-size:.95em;letter-spacing:.05em}
+.sum-h.k{background:#1a9944;color:white}
+.sum-h.u{background:var(--red);color:white}
+.sum-h.p{background:var(--gold);color:var(--black)}
+.sum-tags{display:flex;flex-wrap:wrap;gap:4px;padding:7px;background:white}
+.sum-tag{padding:3px 7px;border:2px solid var(--black);font-weight:700;font-size:.8em;font-family:var(--font-t);letter-spacing:.04em}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:500}
+.modal{background:var(--cream);border:var(--border);box-shadow:6px 6px 0 var(--black);padding:22px;max-width:290px;width:90%}
+.modal-t{font-family:var(--font-t);font-size:1.4em;letter-spacing:.05em;margin-bottom:10px}
+.modal-btns{display:flex;gap:7px;margin-top:14px}
+
+/* iOS BANNER */
+#ios-banner{display:none;background:var(--black);color:var(--cream);padding:9px 14px;font-size:.82em;text-align:center;position:sticky;top:0;z-index:999;line-height:1.4}
+
+/* UTILS */
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+.p14{padding:14px}.pb80{padding-bottom:80px}
+.center{text-align:center}
+.scroll-area{overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* Flash card counter */
+.fc-counter{text-align:center;font-family:var(--font-t);font-size:1.1em;letter-spacing:.05em;color:#666;padding:4px}
+</style>
+</head>
+<body>
+
+<div id="ios-banner">
+  📱 Installe Manga Dojo : appuie sur <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong>
+  <button onclick="document.getElementById('ios-banner').style.display='none'" style="background:none;border:1px solid #fff;color:#fff;padding:2px 8px;margin-left:8px;font-size:.85em;cursor:pointer">✕</button>
+</div>
+
+<div id="app"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   VOCABULARY — 22 units
+═══════════════════════════════════════════════ */
+const VOCAB = {
+  U1:{name:"U1 · Animals & School",words:[
+    {en:"cat",fr:"chat"},{en:"dog",fr:"chien"},{en:"duck",fr:"canard"},
+    {en:"fish",fr:"poisson"},{en:"frog",fr:"grenouille"},{en:"goat",fr:"chèvre"},
+    {en:"sheep",fr:"mouton"},{en:"snake",fr:"serpent"},{en:"spider",fr:"araignée"},
+    {en:"alphabet",fr:"alphabet"},{en:"letter",fr:"lettre"},{en:"draw",fr:"dessiner"},
+    {en:"say",fr:"dire"},{en:"spell",fr:"épeler"}
+  ]},
+  U2:{name:"U2 · Numbers",words:[
+    {en:"one",fr:"un"},{en:"two",fr:"deux"},{en:"three",fr:"trois"},
+    {en:"four",fr:"quatre"},{en:"five",fr:"cinq"},{en:"six",fr:"six"},
+    {en:"seven",fr:"sept"},{en:"eight",fr:"huit"},{en:"nine",fr:"neuf"},
+    {en:"ten",fr:"dix"},{en:"eleven",fr:"onze"},{en:"twelve",fr:"douze"},
+    {en:"thirteen",fr:"treize"},{en:"fourteen",fr:"quatorze"},{en:"fifteen",fr:"quinze"},
+    {en:"sixteen",fr:"seize"},{en:"seventeen",fr:"dix-sept"},{en:"eighteen",fr:"dix-huit"},
+    {en:"nineteen",fr:"dix-neuf"},{en:"twenty",fr:"vingt"},{en:"ball",fr:"balle"},
+    {en:"book",fr:"livre"},{en:"toy",fr:"jouet"},{en:"shoe",fr:"chaussure"},
+    {en:"sock",fr:"chaussette"},{en:"name",fr:"nom"},{en:"birthday",fr:"anniversaire"}
+  ]},
+  U4:{name:"U4 · Colours",words:[
+    {en:"black",fr:"noir"},{en:"blue",fr:"bleu"},{en:"brown",fr:"marron"},
+    {en:"green",fr:"vert"},{en:"orange",fr:"orange"},{en:"pink",fr:"rose"},
+    {en:"purple",fr:"violet"},{en:"red",fr:"rouge"},{en:"white",fr:"blanc"},
+    {en:"yellow",fr:"jaune"},{en:"bird",fr:"oiseau"},{en:"tree",fr:"arbre"},
+    {en:"bike",fr:"vélo"},{en:"boat",fr:"bateau"}
+  ]},
+  U6:{name:"U6 · Body & Animals",words:[
+    {en:"arm",fr:"bras"},{en:"body",fr:"corps"},{en:"ear",fr:"oreille"},
+    {en:"eye",fr:"oeil"},{en:"face",fr:"visage"},{en:"foot",fr:"pied"},
+    {en:"hair",fr:"cheveux"},{en:"hand",fr:"main"},{en:"head",fr:"tête"},
+    {en:"leg",fr:"jambe"},{en:"mouth",fr:"bouche"},{en:"nose",fr:"nez"},
+    {en:"tail",fr:"queue"},{en:"crocodile",fr:"crocodile"},{en:"elephant",fr:"éléphant"},
+    {en:"giraffe",fr:"girafe"},{en:"horse",fr:"cheval"},{en:"mouse",fr:"souris"},
+    {en:"zoo",fr:"zoo"},{en:"big",fr:"grand"},{en:"long",fr:"long"},{en:"small",fr:"petit"}
+  ]},
+  U8:{name:"U8 · Clothes",words:[
+    {en:"bag",fr:"sac"},{en:"boot",fr:"botte"},{en:"cap",fr:"casquette"},
+    {en:"dress",fr:"robe"},{en:"glasses",fr:"lunettes"},{en:"hat",fr:"chapeau"},
+    {en:"jacket",fr:"veste"},{en:"jeans",fr:"jean"},{en:"shirt",fr:"chemise"},
+    {en:"skirt",fr:"jupe"},{en:"trousers",fr:"pantalon"},{en:"T-shirt",fr:"T-shirt"},
+    {en:"chair",fr:"chaise"},{en:"lamp",fr:"lampe"},{en:"favourite",fr:"préféré"},
+    {en:"new",fr:"nouveau"},{en:"flower",fr:"fleur"}
+  ]},
+  U10:{name:"U10 · Family",words:[
+    {en:"brother",fr:"frère"},{en:"cousin",fr:"cousin"},{en:"dad",fr:"papa"},
+    {en:"father",fr:"père"},{en:"grandfather",fr:"grand-père"},{en:"grandmother",fr:"grand-mère"},
+    {en:"mother",fr:"maman"},{en:"sister",fr:"sœur"},{en:"donkey",fr:"âne"},
+    {en:"pet",fr:"animal de compagnie"},{en:"flat",fr:"appartement"},{en:"garden",fr:"jardin"},
+    {en:"house",fr:"maison"},{en:"beautiful",fr:"beau"},{en:"funny",fr:"drôle"},
+    {en:"happy",fr:"joyeux"},{en:"sad",fr:"triste"},{en:"scary",fr:"effrayant"},
+    {en:"silly",fr:"fou"},{en:"ugly",fr:"laid"},{en:"drink",fr:"boire"}
+  ]},
+  U11:{name:"U11 · Possessions",words:[
+    {en:"balloon",fr:"ballon"},{en:"camera",fr:"appareil photo"},{en:"clock",fr:"horloge"},
+    {en:"crayon",fr:"crayon"},{en:"doll",fr:"poupée"},{en:"drawing",fr:"dessin"},
+    {en:"guitar",fr:"guitare"},{en:"phone",fr:"téléphone"},{en:"picture",fr:"image"},
+    {en:"radio",fr:"radio"},{en:"skateboard",fr:"skateboard"},{en:"watch",fr:"montre"},
+    {en:"board game",fr:"jeu de société"},{en:"music",fr:"musique"}
+  ]},
+  U12:{name:"U12 · People",words:[
+    {en:"baby",fr:"bébé"},{en:"boy",fr:"garçon"},{en:"children",fr:"enfants"},
+    {en:"girl",fr:"fille"},{en:"man",fr:"homme"},{en:"woman",fr:"femme"},
+    {en:"people",fr:"personnes"},{en:"person",fr:"personne"},
+    {en:"classmate",fr:"camarade de classe"},{en:"monster",fr:"monstre"}
+  ]},
+  U14:{name:"U14 · Adjectives",words:[
+    {en:"clean",fr:"propre"},{en:"dirty",fr:"sale"},{en:"happy",fr:"heureux"},
+    {en:"long",fr:"long"},{en:"new",fr:"nouveau"},{en:"old",fr:"vieux"},
+    {en:"sad",fr:"triste"},{en:"short",fr:"court"},{en:"young",fr:"jeune"},
+    {en:"smile",fr:"sourire"}
+  ]},
+  U15:{name:"U15 · Animals & Sports",words:[
+    {en:"chicken",fr:"poulet"},{en:"cow",fr:"vache"},{en:"hippo",fr:"hippopotame"},
+    {en:"tiger",fr:"tigre"},{en:"ball game",fr:"jeu de ballon"},
+    {en:"ride a bike",fr:"faire du vélo"},{en:"ride a horse",fr:"faire du cheval"},
+    {en:"run",fr:"courir"},{en:"sing",fr:"chanter"},{en:"swim",fr:"nager"},
+    {en:"take photos",fr:"prendre des photos"},{en:"good at",fr:"bon en"},
+    {en:"and",fr:"et"},{en:"but",fr:"mais"}
+  ]},
+  U16:{name:"U16 · Food",words:[
+    {en:"apple",fr:"pomme"},{en:"banana",fr:"banane"},{en:"bean",fr:"haricot"},
+    {en:"carrot",fr:"carotte"},{en:"coconut",fr:"noix de coco"},{en:"egg",fr:"oeuf"},
+    {en:"fruit",fr:"fruit"},{en:"grape",fr:"raisin"},{en:"kiwi",fr:"kiwi"},
+    {en:"lemon",fr:"citron"},{en:"mango",fr:"mangue"},{en:"milk",fr:"lait"},
+    {en:"onion",fr:"oignon"},{en:"orange",fr:"orange"},{en:"pea",fr:"pois"},
+    {en:"pear",fr:"poire"},{en:"pineapple",fr:"ananas"},{en:"pizza",fr:"pizza"},
+    {en:"potato",fr:"patate"},{en:"tomato",fr:"tomate"},{en:"vegetable",fr:"légume"},
+    {en:"watermelon",fr:"pastèque"}
+  ]},
+  U17:{name:"U17 · Food & Drink",words:[
+    {en:"bread",fr:"pain"},{en:"burger",fr:"burger"},{en:"chicken",fr:"poulet"},
+    {en:"chocolate cake",fr:"gâteau au chocolat"},{en:"ice cream",fr:"glace"},
+    {en:"juice",fr:"jus"},{en:"meatballs",fr:"boulettes de viande"},{en:"pie",fr:"tarte"},
+    {en:"rice",fr:"riz"},{en:"sausage",fr:"saucisse"},{en:"water",fr:"eau"}
+  ]},
+  U18:{name:"U18 · Home",words:[
+    {en:"bathroom",fr:"salle de bain"},{en:"bedroom",fr:"chambre"},
+    {en:"dining room",fr:"salle à manger"},{en:"kitchen",fr:"cuisine"},
+    {en:"living room",fr:"salon"},{en:"home",fr:"maison"},
+    {en:"mirror",fr:"miroir"},{en:"television",fr:"télévision"}
+  ]},
+  U19:{name:"U19 · Furniture",words:[
+    {en:"armchair",fr:"fauteuil"},{en:"bed",fr:"lit"},{en:"cup",fr:"tasse"},
+    {en:"cupboard",fr:"armoire"},{en:"floor",fr:"sol"},{en:"piano",fr:"piano"},
+    {en:"rug",fr:"tapis"},{en:"wall",fr:"mur"},{en:"window",fr:"fenêtre"},
+    {en:"bookshop",fr:"librairie"},{en:"park",fr:"parc"},{en:"shop",fr:"magasin"},
+    {en:"closed",fr:"fermé"},{en:"open",fr:"ouvert"},{en:"tall",fr:"grand"}
+  ]},
+  U20:{name:"U20 · Places & Adjectives",words:[
+    {en:"poster",fr:"affiche"},{en:"sofa",fr:"canapé"},{en:"behind",fr:"derrière"},
+    {en:"in front of",fr:"devant"},{en:"lots of",fr:"beaucoup de"},
+    {en:"many",fr:"beaucoup de"},{en:"no",fr:"aucun"}
+  ]},
+  U21:{name:"U21 · Transport",words:[
+    {en:"bike",fr:"vélo"},{en:"boat",fr:"bateau"},{en:"bus",fr:"bus"},
+    {en:"car",fr:"voiture"},{en:"helicopter",fr:"hélicoptère"},{en:"lorry",fr:"camion"},
+    {en:"motorbike",fr:"moto"},{en:"plane",fr:"avion"},{en:"ship",fr:"navire"},
+    {en:"train",fr:"train"},{en:"truck",fr:"camion"}
+  ]},
+  U22:{name:"U22 · School",words:[
+    {en:"classroom",fr:"salle de classe"},{en:"eraser",fr:"gomme"},
+    {en:"page",fr:"page"},{en:"paper",fr:"papier"},{en:"pen",fr:"stylo"},
+    {en:"pencil",fr:"crayon"},{en:"playground",fr:"cour de récré"},
+    {en:"ruler",fr:"règle"},{en:"schoolbag",fr:"cartable"},
+    {en:"teacher",fr:"professeur"},{en:"blackboard",fr:"tableau"}
+  ]},
+  U27:{name:"U27 · Nature & Meals",words:[
+    {en:"breakfast",fr:"petit-déjeuner"},{en:"dinner",fr:"dîner"},
+    {en:"lunch",fr:"déjeuner"},{en:"supper",fr:"souper"},{en:"sweets",fr:"bonbons"},
+    {en:"menu",fr:"menu"},{en:"bear",fr:"ours"},{en:"bee",fr:"abeille"},
+    {en:"fly",fr:"mouche"},{en:"jellyfish",fr:"méduse"},{en:"zebra",fr:"zèbre"},
+    {en:"grass",fr:"herbe"},{en:"plant",fr:"plante"}
+  ]},
+  U32:{name:"U32 · Birthdays & Beach",words:[
+    {en:"birthday cake",fr:"gâteau d'anniversaire"},{en:"party",fr:"fête"},
+    {en:"present",fr:"cadeau"},{en:"year",fr:"année"},{en:"beach",fr:"plage"},
+    {en:"cloud",fr:"nuage"},{en:"sand",fr:"sable"},{en:"sea",fr:"mer"},
+    {en:"shell",fr:"coquillage"},{en:"sun",fr:"soleil"}
+  ]},
+  U37:{name:"U37 · Sports",words:[
+    {en:"badminton",fr:"badminton"},{en:"baseball",fr:"baseball"},
+    {en:"basketball",fr:"basketball"},{en:"hockey",fr:"hockey"},
+    {en:"table tennis",fr:"tennis de table"},{en:"tennis",fr:"tennis"},
+    {en:"bounce",fr:"rebondir"},{en:"catch",fr:"attraper"},
+    {en:"go fishing",fr:"aller pêcher"},{en:"go swimming",fr:"aller nager"},
+    {en:"hit",fr:"frapper"},{en:"kick",fr:"tirer dans un ballon"},
+    {en:"alien",fr:"extraterrestre"},{en:"teddy bear",fr:"nounours"}
+  ]},
+  U40:{name:"U40 · Time",words:[
+    {en:"afternoon",fr:"après-midi"},{en:"day",fr:"jour"},{en:"evening",fr:"soir"},
+    {en:"morning",fr:"matin"},{en:"night",fr:"nuit"},{en:"get up",fr:"se lever"},
+    {en:"go to bed",fr:"aller au lit"},{en:"go to sleep",fr:"s'endormir"},
+    {en:"wash",fr:"se laver"},{en:"Good morning!",fr:"Bonjour !"},
+    {en:"Hello!",fr:"Bonjour / Salut !"},{en:"ticket",fr:"billet"},{en:"wheel",fr:"roue"}
+  ]},
+  U43:{name:"U43 · Expressions",words:[
+    {en:"bottle",fr:"bouteille"},{en:"station",fr:"gare"},
+    {en:"Bye!",fr:"Au revoir !"},{en:"Don't worry!",fr:"Ne t'inquiète pas !"},
+    {en:"Goodbye",fr:"Au revoir"},{en:"Good evening",fr:"Bonsoir"},
+    {en:"Here you are.",fr:"Voilà."},{en:"I don't understand.",fr:"Je ne comprends pas."},
+    {en:"Me too!",fr:"Moi aussi !"},{en:"See you!",fr:"À bientôt !"},
+    {en:"Well done!",fr:"Bravo !"}
+  ]}
+};
+
+/* ═══════════════════════════════════════════════
+   APP STATE
+═══════════════════════════════════════════════ */
+const APP = {
+  theme: 'naruto',
+  selUnits: [],
+  screen: 'menu',
+  flash: { cards:[], idx:0, known:[], unsure:[], passed:[] },
+  ex: { queue:[], idx:0, lives:3, xp:0, score:0, errors:[], total:0,
+        pairState:null },
+  scores: JSON.parse(localStorage.getItem('mdScores')||'{}')
+};
+
+/* ═══════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════ */
+function norm(s){
+  return String(s).toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/['']/g,"'").trim();
+}
+function shuffle(a){
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}
+  return b;
+}
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function getPool(words,correct,field,n=3){
+  const others=words.filter(w=>norm(w[field])!==norm(correct[field]));
+  const picks=shuffle(others).slice(0,n);
+  return shuffle([correct,...picks]);
+}
+
+function allSelectedWords(){
+  const pool=[];
+  APP.selUnits.forEach(u=>{ if(VOCAB[u]) pool.push(...VOCAB[u].words) });
+  // deduplicate by en+fr
+  const seen=new Set();
+  return pool.filter(w=>{ const k=w.en+'|'+w.fr; if(seen.has(k)) return false; seen.add(k); return true; });
+}
+
+/* ═══════════════════════════════════════════════
+   SVG CHARACTERS
+═══════════════════════════════════════════════ */
+function svgNaruto(expr='normal'){
+  const eyeMap={
+    normal:`<ellipse cx="37" cy="50" rx="4" ry="4.5" fill="#1a1a1a"/>
+            <ellipse cx="63" cy="50" rx="4" ry="4.5" fill="#1a1a1a"/>
+            <circle cx="38.5" cy="48.5" r="1.5" fill="white"/>
+            <circle cx="64.5" cy="48.5" r="1.5" fill="white"/>`,
+    happy:`<path d="M32 50 Q37 45 42 50" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+           <path d="M58 50 Q63 45 68 50" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>`,
+    hurt:`<line x1="32" y1="47" x2="40" y2="53" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="40" y1="47" x2="32" y2="53" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="60" y1="47" x2="68" y2="53" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="68" y1="47" x2="60" y2="53" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>`
+  };
+  const mouthMap={
+    normal:`<path d="M41 62 Q50 67 59 62" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>`,
+    happy:`<path d="M38 60 Q50 72 62 60 L60 63 Q50 74 40 63 Z" fill="#1a1a1a"/>
+           <path d="M38 60 Q50 72 62 60" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>`,
+    hurt:`<path d="M41 65 Q50 61 59 65" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+          <path d="M47 70 Q50 74 53 70" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>`
+  };
+  const extras=expr==='happy'
+    ? `<text x="8" y="22" font-size="14" fill="#d4a017">★</text><text x="78" y="28" font-size="11" fill="#d4a017">✦</text>`
+    : expr==='hurt'
+    ? `<ellipse cx="76" cy="44" rx="4" ry="6" fill="#88ccff" stroke="#1a1a1a" stroke-width="1"/><path d="M74 40 Q76 37 78 40" fill="#88ccff" stroke="none"/>`
+    : '';
+  return `<svg viewBox="0 0 100 145" xmlns="http://www.w3.org/2000/svg" width="130" height="145">
+    ${extras}
+    <!-- back hair spikes -->
+    <path d="M18 42 L12 18 L24 36 L21 14 L34 33 L32 11 L44 30" fill="#1a1a1a" stroke="#1a1a1a" stroke-width="1"/>
+    <path d="M82 42 L88 18 L76 36 L79 14 L66 33 L68 11 L56 30" fill="#1a1a1a" stroke="#1a1a1a" stroke-width="1"/>
+    <!-- head -->
+    <ellipse cx="50" cy="52" rx="33" ry="31" fill="white" stroke="#1a1a1a" stroke-width="3"/>
+    <!-- hair top -->
+    <path d="M18 38 Q16 16 35 22 Q42 11 50 16 Q58 11 65 22 Q84 16 82 38" fill="#1a1a1a"/>
+    <!-- headband metal -->
+    <rect x="17" y="30" width="66" height="14" rx="3" fill="#d0d0d0" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- konoha symbol -->
+    <circle cx="50" cy="37" r="5.5" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+    <path d="M50 31.5 L50 37 M47 34 L53 40 M47 40 Q50 43 53 40" stroke="#1a1a1a" stroke-width="1" fill="none"/>
+    <!-- whiskers -->
+    <line x1="19" y1="52" x2="37" y2="50" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+    <line x1="18" y1="57" x2="37" y2="57" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+    <line x1="19" y1="62" x2="37" y2="64" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+    <line x1="81" y1="52" x2="63" y2="50" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+    <line x1="82" y1="57" x2="63" y2="57" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+    <line x1="81" y1="62" x2="63" y2="64" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+    <!-- eyes -->
+    ${eyeMap[expr]}
+    <!-- nose -->
+    <circle cx="50" cy="58" r="2" fill="#1a1a1a"/>
+    <!-- mouth -->
+    ${mouthMap[expr]}
+    <!-- neck -->
+    <rect x="43" y="81" width="14" height="13" fill="white" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- body jacket -->
+    <rect x="22" y="93" width="56" height="52" rx="4" fill="white" stroke="#1a1a1a" stroke-width="3"/>
+    <!-- stripe pattern on jacket -->
+    <line x1="22" y1="100" x2="78" y2="100" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="50" y1="93" x2="50" y2="145" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- collar -->
+    <path d="M43 93 L50 102 L57 93" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- arms -->
+    <rect x="6" y="93" width="17" height="36" rx="4" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>
+    <rect x="77" y="93" width="17" height="36" rx="4" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>
+    <line x1="10" y1="96" x2="10" y2="126" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="90" y1="96" x2="90" y2="126" stroke="#1a1a1a" stroke-width="1.5"/>
+  </svg>`;
+}
+
+function svgLuffy(expr='normal'){
+  const eyeMap={
+    normal:`<circle cx="37" cy="52" r="4.5" fill="#1a1a1a"/>
+            <circle cx="63" cy="52" r="4.5" fill="#1a1a1a"/>
+            <circle cx="38.5" cy="50.5" r="1.5" fill="white"/>
+            <circle cx="64.5" cy="50.5" r="1.5" fill="white"/>`,
+    happy:`<path d="M32 52 Q37 47 42 52" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+           <path d="M58 52 Q63 47 68 52" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>`,
+    hurt:`<line x1="32" y1="49" x2="40" y2="55" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="40" y1="49" x2="32" y2="55" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="60" y1="49" x2="68" y2="55" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="68" y1="49" x2="60" y2="55" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>`
+  };
+  const mouthMap={
+    normal:`<path d="M39 64 Q50 70 61 64" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>`,
+    happy:`<path d="M35 62 Q50 76 65 62 L63 66 Q50 78 37 66 Z" fill="#1a1a1a"/>
+           <rect x="45" y="66" width="10" height="4" fill="white"/>`,
+    hurt:`<path d="M41 67 Q50 63 59 67" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+          <path d="M48 72 Q50 76 52 72" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>`
+  };
+  const extras=expr==='happy'
+    ? `<text x="5" y="24" font-size="16" fill="#d4a017">★</text><text x="79" y="20" font-size="12" fill="#d4a017">★</text>`
+    : expr==='hurt'
+    ? `<ellipse cx="78" cy="45" rx="4" ry="6" fill="#88ccff" stroke="#1a1a1a" stroke-width="1"/><path d="M76 41 Q78 38 80 41" fill="#88ccff" stroke="none"/>`
+    : '';
+  return `<svg viewBox="0 0 100 145" xmlns="http://www.w3.org/2000/svg" width="130" height="145">
+    ${extras}
+    <!-- hat brim -->
+    <ellipse cx="50" cy="24" rx="38" ry="6" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>
+    <!-- hat body -->
+    <path d="M20 24 Q22 8 50 8 Q78 8 80 24" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>
+    <!-- hat band -->
+    <path d="M20 24 Q50 19 80 24" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- hat cord -->
+    <line x1="20" y1="25" x2="14" y2="55" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="80" y1="25" x2="86" y2="55" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- head -->
+    <ellipse cx="50" cy="53" rx="32" ry="30" fill="white" stroke="#1a1a1a" stroke-width="3"/>
+    <!-- hair -->
+    <path d="M25 38 Q22 28 30 28 Q36 26 42 30 Q50 26 58 30 Q64 26 70 28 Q78 28 75 38" fill="#1a1a1a"/>
+    <!-- scar under left eye (X shape) -->
+    <line x1="34" y1="57" x2="40" y2="63" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="40" y1="57" x2="34" y2="63" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- eyes -->
+    ${eyeMap[expr]}
+    <!-- nose -->
+    <circle cx="50" cy="60" r="2" fill="#1a1a1a"/>
+    <!-- mouth -->
+    ${mouthMap[expr]}
+    <!-- neck -->
+    <rect x="43" y="81" width="14" height="12" fill="white" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- body - red vest open -->
+    <rect x="24" y="92" width="52" height="53" rx="3" fill="white" stroke="#1a1a1a" stroke-width="3"/>
+    <!-- vest panels (no shirt under) -->
+    <path d="M24 92 L24 145 L40 145 L40 95 Z" fill="#cccccc" stroke="#1a1a1a" stroke-width="1.5"/>
+    <path d="M76 92 L76 145 L60 145 L60 95 Z" fill="#cccccc" stroke="#1a1a1a" stroke-width="1.5"/>
+    <line x1="50" y1="92" x2="50" y2="145" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- vest open collar -->
+    <path d="M43 92 L50 104 L57 92" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- arms -->
+    <rect x="7" y="92" width="18" height="38" rx="5" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>
+    <rect x="75" y="92" width="18" height="38" rx="5" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>
+    <!-- rubber arm stretch hint on happy -->
+    ${expr==='happy' ? `<path d="M7 108 Q0 115 7 122" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-dasharray="3,2"/>` : ''}
+  </svg>`;
+}
+
+function getChar(expr='normal'){
+  return APP.theme==='naruto' ? svgNaruto(expr) : svgLuffy(expr);
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER ENGINE
+═══════════════════════════════════════════════ */
+const $app=document.getElementById('app');
+function render(html){ $app.innerHTML=`<div class="screen">${html}</div>`; }
+
+/* ═══════════════════════════════════════════════
+   ONOMATOPEIA
+═══════════════════════════════════════════════ */
+const CORRECT_SFX=['YEAH!','SUPER!','WOOSH!','FLASH!','BOOM!','ZAP!','GREAT!'];
+const WRONG_SFX=['OUCH!','ARGH!','MISS!','NOPE!','OOF!'];
+function showOnoma(ok){
+  const el=document.createElement('div');
+  el.className='onoma '+(ok?'c':'w');
+  el.textContent=rnd(ok?CORRECT_SFX:WRONG_SFX);
+  el.style.left=Math.random()*50+20+'%';
+  el.style.top=Math.random()*30+20+'%';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),900);
+}
+
+/* ═══════════════════════════════════════════════
+   SCREEN 1 — MENU
+═══════════════════════════════════════════════ */
+function renderMenu(){
+  APP.screen='menu';
+  const unitKeys=Object.keys(VOCAB);
+  const chipsHtml=unitKeys.map(k=>`<span class="chip${APP.selUnits.includes(k)?' sel':''}" data-u="${k}">${VOCAB[k].name.split('·')[0].trim()}</span>`).join('');
+  render(`
+    <div class="menu-logo ht">
+      <div class="menu-title">MANGA<br>DOJO</div>
+      <div class="menu-sub">Apprends l'anglais avec style !</div>
+    </div>
+    <div class="char-area"><div class="char-bounce">${getChar('normal')}</div></div>
+
+    <div class="theme-sel">
+      <button class="tbtn${APP.theme==='naruto'?' act':''}" onclick="setTheme('naruto')">🍥 NARUTO</button>
+      <button class="tbtn${APP.theme==='onepiece'?' act':''}" onclick="setTheme('onepiece')">🏴‍☠️ ONE PIECE</button>
+    </div>
+
+    <div class="unit-select-label">Choisis tes unités :</div>
+    <div class="chips" id="chips-wrap">${chipsHtml}</div>
+    <div style="text-align:right;padding:0 14px 6px">
+      <button class="btn" style="font-size:.85em;padding:6px 12px" onclick="selectAllUnits()">Tout</button>
+      <button class="btn" style="font-size:.85em;padding:6px 12px" onclick="clearAllUnits()">Aucun</button>
+    </div>
+
+    <div class="menu-btns">
+      <button class="btn btn-primary btn-block" onclick="goLexique()">📖 LEXIQUE</button>
+      <button class="btn btn-block" onclick="goRevision()">🃏 RÉVISION FLASH</button>
+      <button class="btn btn-gold btn-block" onclick="goExercices()">⚔️ JOUER</button>
+    </div>
+    <div style="padding:14px;text-align:center;font-size:.78em;color:#888;font-weight:700">
+      ${APP.selUnits.length===0?'⚠️ Sélectionne au moins une unité':APP.selUnits.length+' unité(s) · '+allSelectedWords().length+' mots'}
+    </div>
+  `);
+
+  // chip events
+  document.querySelectorAll('.chip').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const u=el.dataset.u;
+      const i=APP.selUnits.indexOf(u);
+      if(i>=0) APP.selUnits.splice(i,1);
+      else APP.selUnits.push(u);
+      renderMenu();
+    });
+  });
+}
+function setTheme(t){ APP.theme=t; renderMenu(); }
+function selectAllUnits(){ APP.selUnits=Object.keys(VOCAB); renderMenu(); }
+function clearAllUnits(){ APP.selUnits=[]; renderMenu(); }
+
+function requireUnits(){
+  if(APP.selUnits.length===0){
+    alert('Sélectionne au moins une unité !');
+    return false;
+  }
+  return true;
+}
+function goLexique(){ if(!requireUnits()) return; renderLexique(); }
+function goRevision(){ if(!requireUnits()) return; startFlash(); }
+function goExercices(){ if(!requireUnits()) return; startExercices(allSelectedWords()); }
+
+/* ═══════════════════════════════════════════════
+   SCREEN 2 — LEXIQUE
+═══════════════════════════════════════════════ */
+function renderLexique(query=''){
+  APP.screen='lexique';
+  const q=norm(query);
+  let accordionHtml='';
+  APP.selUnits.forEach(uk=>{
+    const unit=VOCAB[uk];
+    let words=unit.words;
+    let matchCount=0;
+    const wordsHtml=words.map(w=>{
+      const hitEn=q && norm(w.en).includes(q);
+      const hitFr=q && norm(w.fr).includes(q);
+      const hit=!q || hitEn || hitFr;
+      if(hit) matchCount++;
+      if(!hit && q) return '';
+      const cls='word-card'+(hitEn||hitFr?' hi':'');
+      return `<div class="${cls}"><span class="word-en">${w.en}</span><span class="word-fr">${w.fr}</span></div>`;
+    }).join('');
+    if(q && matchCount===0) return;
+    accordionHtml+=`
+      <div class="acc-item">
+        <div class="acc-h" onclick="toggleAcc(this)">${unit.name}<span>${q?matchCount+' résultat(s)':'▼'}</span></div>
+        <div class="acc-b${q?' open':''}"><div style="padding:4px">${wordsHtml}</div></div>
+      </div>`;
+  });
+
+  render(`
+    <div class="sh">📖 LEXIQUE <button class="btn btn-primary" style="font-size:.75em;padding:6px 12px" onclick="renderMenu()">☰ MENU</button></div>
+    <div class="srch-wrap">
+      <input class="srch-inp" id="srch" placeholder="Rechercher un mot FR ou EN..." value="${query}" oninput="renderLexique(this.value)">
+      <button class="srch-clr" onclick="renderLexique('')">✕</button>
+    </div>
+    <div class="scroll-area pb80" style="max-height:calc(100vh - 110px)">
+      ${accordionHtml||'<div style="padding:24px;text-align:center;font-weight:700;color:#888">Aucun résultat</div>'}
+    </div>
+  `);
+  if(query){ const el=document.getElementById('srch'); if(el){el.focus();el.setSelectionRange(query.length,query.length);} }
+}
+function toggleAcc(el){
+  const body=el.nextElementSibling;
+  const open=body.classList.toggle('open');
+  el.querySelector('span').textContent=open?'▲':'▼';
+}
+
+/* ═══════════════════════════════════════════════
+   SCREEN 3 — FLASH CARDS
+═══════════════════════════════════════════════ */
+function startFlash(){
+  APP.flash={ cards:shuffle(allSelectedWords()), idx:0, known:[], unsure:[], passed:[] };
+  renderFlash();
+}
+function renderFlash(){
+  const {cards,idx,known,unsure,passed}=APP.flash;
+  if(idx>=cards.length){ renderFlashSummary(); return; }
+  const w=cards[idx];
+  const total=cards.length;
+  const dotsHtml=cards.map((_,i)=>{
+    let cls='dot';
+    if(i<idx) cls='dot dot-ok';
+    else if(i===idx) cls='dot dot-cur';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  render(`
+    <div class="sh">🃏 RÉVISION <button class="btn btn-primary" style="font-size:.75em;padding:6px 12px" onclick="renderMenu()">☰ MENU</button></div>
+    <div class="fc-counter">${idx+1} / ${total}</div>
+    <div class="dots">${dotsHtml}</div>
+    <div class="pbar"><div class="pbar-fill" style="width:${(idx/total*100).toFixed(0)}%"></div></div>
+
+    <div class="fc" id="fc-card">
+      <div class="fc-en">${w.en}</div>
+      <div class="fc-fr">${w.fr}</div>
+    </div>
+
+    <div style="text-align:center;padding:4px 14px 0;font-size:.8em;font-weight:700;color:#888">
+      ✅ Sus : ${known.length} &nbsp;|&nbsp; ❓ Pas sûr : ${unsure.length} &nbsp;|&nbsp; → Passés : ${passed.length}
+    </div>
+
+    <div class="fc-actions">
+      <button class="btn btn-red" onclick="flashAns('unsure')">✗<br><span style="font-size:.65em">PAS SÛR</span></button>
+      <button class="btn" onclick="flashAns('passed')">→<br><span style="font-size:.65em">PASSER</span></button>
+      <button class="btn btn-green" onclick="flashAns('known')">✓<br><span style="font-size:.65em">SU</span></button>
+    </div>
+  `);
+}
+function flashAns(type){
+  const w=APP.flash.cards[APP.flash.idx];
+  APP.flash[type].push(w);
+  APP.flash.idx++;
+  renderFlash();
+}
+function renderFlashSummary(){
+  const {known,unsure,passed}=APP.flash;
+  const mkTags=arr=>arr.length?arr.map(w=>`<span class="sum-tag">${w.en}</span>`).join(''):'<span style="color:#999;font-size:.85em">aucun</span>';
+  render(`
+    <div class="sh">🃏 RÉSUMÉ FLASH <button class="btn btn-primary" style="font-size:.75em;padding:6px 12px" onclick="renderMenu()">☰ MENU</button></div>
+    <div style="text-align:center;padding:16px 14px 8px;font-family:var(--font-t);font-size:1.1em;letter-spacing:.05em">
+      Révision terminée !<br>
+      ✅ ${known.length} sus &nbsp; ❓ ${unsure.length} pas sûrs &nbsp; → ${passed.length} passés
+    </div>
+    <div class="sum-sec"><div class="sum-h k">✅ Sus (${known.length})</div><div class="sum-tags">${mkTags(known)}</div></div>
+    <div class="sum-sec"><div class="sum-h u">❓ Pas sûrs (${unsure.length})</div><div class="sum-tags">${mkTags(unsure)}</div></div>
+    <div class="sum-sec"><div class="sum-h p">→ Passés (${passed.length})</div><div class="sum-tags">${mkTags(passed)}</div></div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;padding:14px">
+      <button class="btn btn-gold btn-block" onclick="launchFromFlash()">⚔️ LANCER LES EXERCICES</button>
+      <button class="btn btn-block" onclick="renderMenu()">☰ MENU</button>
+    </div>
+  `);
+}
+function launchFromFlash(){
+  const {known,unsure,passed}=APP.flash;
+  // prioritise unsure then passed then known
+  const priority=[...unsure,...passed,...known];
+  startExercices(priority.length>0?priority:allSelectedWords());
+}
+
+/* ═══════════════════════════════════════════════
+   EXERCISE GENERATORS
+═══════════════════════════════════════════════ */
+const FILL_TEMPLATES=[
+  (en,fr)=>({sent:`In English, "${fr}" is: ___`,answer:en}),
+  (en,fr)=>({sent:`How do you say "${fr}" in English? ___`,answer:en}),
+  (en,fr)=>({sent:`The English word for "${fr}": ___`,answer:en}),
+  (en,fr)=>({sent:`Complete: "${fr}" = ___ in English`,answer:en}),
+];
+
+function genMCQ_FRtoEN(word, allWords){
+  const opts=getPool(allWords,word,'en');
+  return {type:'mcq_fr_en', word,
+    prompt:`Comment dit-on en anglais ?`, highlight:word.fr,
+    options:opts.map(o=>o.en), correct:word.en};
+}
+function genMCQ_ENtoFR(word, allWords){
+  const opts=getPool(allWords,word,'fr');
+  return {type:'mcq_en_fr', word,
+    prompt:`Que signifie en français ?`, highlight:word.en,
+    options:opts.map(o=>o.fr), correct:word.fr};
+}
+function genFreeType(word){
+  return {type:'free', word,
+    prompt:`Écris en anglais :`, highlight:word.fr, correct:word.en};
+}
+function genFillBlank(word, allWords){
+  const tpl=rnd(FILL_TEMPLATES);
+  const {sent,answer}=tpl(word.en,word.fr);
+  const opts=getPool(allWords,word,'en');
+  return {type:'fill', word,
+    sentence:sent, options:opts.map(o=>o.en), correct:answer};
+}
+function genPairMatch(words){
+  // group of 4 words
+  const group=shuffle(words).slice(0,4);
+  return {type:'pair', words:group, matched:new Set(), wrongPair:null, selEn:null, selFr:null};
+}
+
+function buildQueue(words){
+  const shuffled=shuffle(words);
+  const queue=[];
+  const allWords=allSelectedWords(); // for distractor pool
+  const pool=allWords.length>4?allWords:shuffled; // fallback
+
+  shuffled.forEach((w,i)=>{
+    const types=['mcq_fr_en','mcq_en_fr','free','fill'];
+    const t=rnd(types);
+    if(t==='mcq_fr_en') queue.push(genMCQ_FRtoEN(w,pool));
+    else if(t==='mcq_en_fr') queue.push(genMCQ_ENtoFR(w,pool));
+    else if(t==='free') queue.push(genFreeType(w));
+    else queue.push(genFillBlank(w,pool));
+
+    // insert pair match every 5 questions
+    if((i+1)%5===0 && shuffled.length>=(i+5)){
+      const pairWords=shuffled.slice(i,i+4);
+      if(pairWords.length>=4) queue.push(genPairMatch(pairWords));
+    }
+  });
+  return queue;
+}
+
+/* ═══════════════════════════════════════════════
+   SCREEN 4 — EXERCISES
+═══════════════════════════════════════════════ */
+function startExercices(words){
+  APP.ex={
+    queue: buildQueue(words),
+    idx:0, lives:3, xp:0, score:0, errors:[], total:0,
+    pairState:null
+  };
+  APP.ex.total=APP.ex.queue.length;
+  renderEx();
+}
+
+function renderEx(){
+  const ex=APP.ex;
+  if(ex.idx>=ex.queue.length){ renderErrorReview(); return; }
+  const q=ex.queue[ex.idx];
+  const heartsHtml=[0,1,2].map(i=>`<span class="heart${i<(3-ex.lives)?' heart-lost':''}">❤️</span>`).join('');
+  const prog=(ex.idx/ex.total*100).toFixed(0);
+  const xpPct=Math.min(ex.xp,100);
+
+  let contentHtml='';
+  if(q.type==='pair'){
+    contentHtml=renderPairEx(q);
+  } else {
+    contentHtml=renderSingleEx(q);
+  }
+
+  render(`
+    <div class="hud">
+      <div class="hearts">${heartsHtml}</div>
+      <div class="xp-bar-wrap"><div class="xp-fill" style="width:${xpPct}%"></div></div>
+      <div class="hud-score">⭐${ex.score}</div>
+      <button class="btn btn-primary" style="font-size:.7em;padding:5px 9px" onclick="confirmMenu()">☰</button>
+    </div>
+    <div class="pbar" style="margin:6px 12px"><div class="pbar-fill" style="width:${prog}%"></div></div>
+    <div style="text-align:right;padding:0 14px;font-size:.75em;font-weight:700;color:#888">${ex.idx+1}/${ex.total}</div>
+    <div class="ex-wrap">${contentHtml}</div>
+    <div style="height:20px"></div>
+  `);
+  // attach events
+  attachExEvents(q);
+}
+
+function renderSingleEx(q){
+  let bodyHtml='';
+  if(q.type==='mcq_fr_en'||q.type==='mcq_en_fr'){
+    const isEnQ=q.type==='mcq_en_fr';
+    bodyHtml=`
+      <div class="ex-type">${isEnQ?'EN → FR':'FR → EN'}</div>
+      <div class="ex-q">${q.prompt}<br><span class="${isEnQ?'bub bub-en':''}${!isEnQ?' style=\'font-weight:800;font-size:1.1em\'':''}">${q.highlight}</span></div>
+      <div class="mcq-grid" id="opts">
+        ${q.options.map(o=>`<button class="mcq-opt" data-val="${escHtml(o)}">${o}</button>`).join('')}
+      </div>`;
+  } else if(q.type==='free'){
+    bodyHtml=`
+      <div class="ex-type">📝 ÉCRIRE EN ANGLAIS</div>
+      <div class="ex-q">${q.prompt}<br><span style="font-weight:800;font-size:1.1em">${q.highlight}</span></div>
+      <input class="ft-inp" id="ft-inp" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Tape ta réponse...">
+      <button class="btn btn-primary btn-block mt8" onclick="submitFree()">✓ VALIDER</button>`;
+  } else if(q.type==='fill'){
+    const displayed=q.sentence.replace('___','<span class="fill-blank">___</span>');
+    bodyHtml=`
+      <div class="ex-type">✏️ COMPLÉTER LA PHRASE</div>
+      <div class="fill-sent">${displayed}</div>
+      <div class="mcq-grid" id="opts">
+        ${q.options.map(o=>`<button class="mcq-opt" data-val="${escHtml(o)}">${o}</button>`).join('')}
+      </div>`;
+  }
+  return `<div class="ex-prompt">${bodyHtml}</div>`;
+}
+
+function renderPairEx(q){
+  const enWords=shuffle(q.words.map(w=>w.en));
+  const frWords=shuffle(q.words.map(w=>w.fr));
+  q._enOrder=enWords; q._frOrder=frWords;
+  return `
+    <div class="ex-prompt">
+      <div class="ex-type">🔗 ASSOCIER LES PAIRES</div>
+      <div class="ex-q" style="margin-bottom:6px">Relie l'anglais au français !</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px">
+        <div style="display:flex;flex-direction:column;gap:5px">
+          ${enWords.map(en=>`<div class="pair-item pi-en" id="pe-${encodeId(en)}" data-en="${escHtml(en)}">${en}</div>`).join('')}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          ${frWords.map(fr=>`<div class="pair-item pi-fr" id="pf-${encodeId(fr)}" data-fr="${escHtml(fr)}">${fr}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div id="pair-status" style="text-align:center;padding:8px;font-weight:700;font-size:.85em;color:#888">
+      Sélectionne un mot anglais puis son traduction !
+    </div>`;
+}
+
+function encodeId(s){ return btoa(encodeURIComponent(s)).replace(/[^a-zA-Z0-9]/g,'') }
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+function attachExEvents(q){
+  if(q.type==='pair'){
+    let selEn=null;
+    const matched=new Set();
+    const checkDone=()=>{
+      if(matched.size>=q.words.length){
+        // all matched
+        APP.ex.score+=q.words.length*5;
+        APP.ex.xp+=q.words.length*3;
+        showOnoma(true);
+        setTimeout(()=>{ APP.ex.idx++; renderEx(); },700);
+      }
+    };
+    document.querySelectorAll('.pi-en').forEach(el=>{
+      el.addEventListener('click',()=>{
+        if(el.classList.contains('pi-ok')) return;
+        document.querySelectorAll('.pi-en').forEach(e=>e.classList.remove('pi-sel'));
+        el.classList.add('pi-sel');
+        selEn=el.dataset.en;
+      });
+    });
+    document.querySelectorAll('.pi-fr').forEach(el=>{
+      el.addEventListener('click',()=>{
+        if(!selEn) return;
+        if(el.classList.contains('pi-ok')) return;
+        const fr=el.dataset.fr;
+        // find matching word
+        const match=q.words.find(w=>norm(w.en)===norm(selEn));
+        if(match && norm(match.fr)===norm(fr)){
+          // correct
+          document.getElementById('pe-'+encodeId(selEn))?.classList.replace('pi-sel','pi-ok');
+          el.classList.add('pi-ok');
+          matched.add(selEn);
+          selEn=null;
+          showOnoma(true);
+          document.getElementById('pair-status').textContent=`✅ ${matched.size}/${q.words.length} paires trouvées`;
+          checkDone();
+        } else {
+          // wrong
+          el.classList.add('pi-bad');
+          document.getElementById('pe-'+encodeId(selEn))?.classList.add('pi-bad');
+          setTimeout(()=>{
+            el.classList.remove('pi-bad');
+            document.getElementById('pe-'+encodeId(selEn))?.classList.remove('pi-bad');
+          },500);
+          showOnoma(false);
+          selEn=null;
+          document.querySelectorAll('.pi-en').forEach(e=>e.classList.remove('pi-sel'));
+        }
+      });
+    });
+    return;
+  }
+
+  // MCQ / FILL events
+  if(q.type==='mcq_fr_en'||q.type==='mcq_en_fr'||q.type==='fill'){
+    document.querySelectorAll('.mcq-opt').forEach(el=>{
+      el.addEventListener('click',()=>{
+        if(el.dataset.used) return;
+        document.querySelectorAll('.mcq-opt').forEach(e=>e.dataset.used='1');
+        const correct=el.dataset.val===q.correct;
+        el.classList.add(correct?'sc':'sw');
+        if(!correct){
+          document.querySelectorAll('.mcq-opt').forEach(e=>{
+            if(e.dataset.val===q.correct) e.classList.add('show-c');
+          });
+        }
+        handleAnswer(correct,q.word,q.correct,el.dataset.val);
+      });
+    });
+  }
+
+  // Free type enter key
+  if(q.type==='free'){
+    const inp=document.getElementById('ft-inp');
+    if(inp){
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter') submitFree(); });
+      inp.focus();
+    }
+  }
+}
+
+function submitFree(){
+  const q=APP.ex.queue[APP.ex.idx];
+  const inp=document.getElementById('ft-inp');
+  if(!inp) return;
+  const val=inp.value;
+  if(!val.trim()) return;
+  const correct=norm(val)===norm(q.correct);
+  inp.disabled=true;
+  inp.style.background=correct?'#d0f0d8':'#ffd0d0';
+  const btn=inp.nextElementSibling;
+  if(btn) btn.disabled=true;
+  handleAnswer(correct,q.word,q.correct,val);
+}
+
+function handleAnswer(correct, word, rightAnswer, given){
+  if(correct){
+    APP.ex.score+=10;
+    APP.ex.xp=Math.min(APP.ex.xp+8,100);
+    showOnoma(true);
+  } else {
+    APP.ex.lives=Math.max(0,APP.ex.lives-1);
+    APP.ex.errors.push({word, right:rightAnswer, typed:given});
+    showOnoma(false);
+    if(APP.ex.lives<=0){
+      setTimeout(()=>{ renderErrorReview(); },800);
+      return;
+    }
+  }
+  setTimeout(()=>{ APP.ex.idx++; renderEx(); },700);
+}
+
+function confirmMenu(){
+  const ov=document.createElement('div');
+  ov.className='modal-ov';
+  ov.innerHTML=`<div class="modal">
+    <div class="modal-t">Quitter ?</div>
+    <div>Tu vas perdre ta progression...</div>
+    <div class="modal-btns">
+      <button class="btn btn-red" onclick="renderMenu()">QUITTER</button>
+      <button class="btn btn-primary" onclick="this.closest('.modal-ov').remove()">CONTINUER</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+/* ═══════════════════════════════════════════════
+   SCREEN 5 — ERROR REVIEW
+═══════════════════════════════════════════════ */
+function renderErrorReview(){
+  APP.screen='review';
+  const errors=APP.ex.errors;
+  if(errors.length===0){ renderResults(); return; }
+
+  const cardsHtml=errors.map(e=>`
+    <div class="er-card">
+      <div class="er-en">${e.word.en}</div>
+      <div class="er-fr">🇫🇷 ${e.word.fr}</div>
+      ${e.typed && norm(e.typed)!==norm(e.right) ? `<div class="er-typed">Tu as écrit : "${e.typed}"</div>`:''}
+    </div>
+  `).join('');
+
+  render(`
+    <div class="sh">❌ ERREURS <button class="btn btn-primary" style="font-size:.75em;padding:6px 12px" onclick="renderMenu()">☰ MENU</button></div>
+    <div style="text-align:center;padding:12px 14px 6px;font-family:var(--font-t);font-size:1.1em;letter-spacing:.05em">
+      ${errors.length} mot(s) à réviser !
+    </div>
+    <div style="text-align:center;padding:0 14px 4px">
+      ${getChar('hurt')}
+    </div>
+    <div class="scroll-area" style="max-height:calc(100vh - 260px)">
+      ${cardsHtml}
+    </div>
+    <div style="padding:14px">
+      <button class="btn btn-gold btn-block" onclick="renderResults()">📊 VOIR LES RÉSULTATS</button>
+    </div>
+  `);
+}
+
+/* ═══════════════════════════════════════════════
+   SCREEN 6 — RESULTS
+═══════════════════════════════════════════════ */
+function getRank(pct){
+  if(APP.theme==='naruto'){
+    if(pct>=90) return {name:'KAGE',icon:'👑'};
+    if(pct>=75) return {name:'JONIN',icon:'⚡'};
+    if(pct>=60) return {name:'CHUNIN',icon:'🍃'};
+    return {name:'GENIN',icon:'🍥'};
+  } else {
+    if(pct>=75) return {name:'ROI DES PIRATES',icon:'👑'};
+    if(pct>=50) return {name:'CORSAIRE',icon:'⚓'};
+    return {name:'PIRATE',icon:'🏴‍☠️'};
+  }
+}
+function getStars(pct){
+  if(pct>=90) return '★★★';
+  if(pct>=60) return '★★☆';
+  if(pct>=30) return '★☆☆';
+  return '☆☆☆';
+}
+
+function renderResults(){
+  APP.screen='results';
+  const ex=APP.ex;
+  const correct=ex.score/10;
+  const total=ex.total;
+  const pct=total>0?Math.round(correct/Math.max(total,1)*100):0;
+  const rank=getRank(pct);
+  const stars=getStars(pct);
+  const key=APP.theme+'-'+APP.selUnits.sort().join('-');
+  const prev=APP.scores[key]||0;
+  if(ex.score>prev){ APP.scores[key]=ex.score; localStorage.setItem('mdScores',JSON.stringify(APP.scores)); }
+  const isRecord=ex.score>prev&&prev>0;
+
+  const errorsHtml=ex.errors.length>0
+    ? ex.errors.map(e=>`<div class="word-card" style="margin-bottom:3px">
+        <span class="word-en">${e.word.en}</span><span class="word-fr">${e.word.fr}</span>
+      </div>`).join('')
+    : '<div style="padding:8px;color:#1a9944;font-weight:700">✅ Aucune erreur !</div>';
+
+  render(`
+    <div class="sh">🏆 RÉSULTATS <button class="btn btn-primary" style="font-size:.75em;padding:6px 12px" onclick="renderMenu()">☰ MENU</button></div>
+    <div style="text-align:center;padding:12px 14px 4px">${getChar('happy')}</div>
+    <div class="res-stars">${stars}</div>
+    <div class="rank-badge">${rank.icon} ${rank.name}</div>
+
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num">${ex.score}</div><div class="stat-label">⭐ XP GAGNÉ</div></div>
+      <div class="stat-box"><div class="stat-num">${pct}%</div><div class="stat-label">📊 RÉUSSITE</div></div>
+      <div class="stat-box"><div class="stat-num">${correct}</div><div class="stat-label">✅ BONNES RÉP.</div></div>
+      <div class="stat-box"><div class="stat-num">${ex.errors.length}</div><div class="stat-label">❌ ERREURS</div></div>
+    </div>
+
+    ${isRecord?`<div style="text-align:center;padding:8px;font-family:var(--font-t);font-size:1.1em;letter-spacing:.05em;color:var(--gold)">🏅 NOUVEAU RECORD ! (${prev} → ${ex.score})</div>`:''}
+    ${prev>0&&!isRecord?`<div style="text-align:center;padding:4px;font-size:.8em;font-weight:700;color:#888">Meilleur score : ${prev}</div>`:''}
+
+    <div style="padding:0 14px 6px;font-family:var(--font-t);font-size:.9em;letter-spacing:.05em">Mots ratés :</div>
+    <div style="margin:0 14px 8px;border:var(--border);overflow:hidden">${errorsHtml}</div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;padding:14px">
+      <button class="btn btn-gold btn-block" onclick="goExercices()">🔄 REJOUER</button>
+      <button class="btn btn-block" onclick="renderMenu()">☰ MENU</button>
+    </div>
+  `);
+}
+
+/* ═══════════════════════════════════════════════
+   PWA SETUP
+═══════════════════════════════════════════════ */
+function initPWA(){
+  // Manifest
+  const manifest={
+    name:'Manga Dojo',short_name:'Manga Dojo',
+    description:"Apprends l'anglais avec Naruto et Luffy!",
+    start_url:'.',display:'standalone',
+    background_color:'#f7f3e9',theme_color:'#1a1a1a',
+    icons:[{src:`data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23f7f3e9'/><text x='96' y='140' font-size='120' text-anchor='middle'>⚡</text></svg>`)}`,sizes:'192x192',type:'image/svg+xml'}]
+  };
+  const mLink=document.createElement('link');
+  mLink.rel='manifest';
+  mLink.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(manifest));
+  document.head.appendChild(mLink);
+
+  // Service Worker
+  const SW=`
+const CV='mdv2';
+self.addEventListener('install',e=>{ self.skipWaiting(); });
+self.addEventListener('activate',e=>{ e.waitUntil(clients.claim()); });
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET') return;
+  e.respondWith(caches.open(CV).then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(res=>{c.put(e.request,res.clone());return res;}))));
+});`;
+  if('serviceWorker' in navigator){
+    const blob=new Blob([SW],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  }
+
+  // iOS install banner
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone;
+  if(isIOS&&!isStandalone&&!localStorage.getItem('ios-banner-dismissed')){
+    const banner=document.getElementById('ios-banner');
+    if(banner){
+      banner.style.display='block';
+      banner.querySelector('button').addEventListener('click',()=>{
+        localStorage.setItem('ios-banner-dismissed','1');
+        banner.style.display='none';
+      });
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════ */
+initPWA();
+renderMenu();
+</script>
+</body>
+</html>
