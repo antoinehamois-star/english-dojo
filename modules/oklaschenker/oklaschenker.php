@@ -181,8 +181,12 @@ class Oklaschenker extends CarrierModule
         $carrier->shipping_method = Carrier::SHIPPING_METHOD_PRICE;
         $carrier->url = '';
         $carrier->id_tax_rules_group = 0; // à configurer explicitement en back-office
+        // Champ obligatoire côté PrestaShop (Carrier::$definition) : ne peut pas être vide,
+        // sous peine d'échec de la validation à l'enregistrement ("La propriété Carrier->delay
+        // est vide."). Valeur neutre, remplacée par le gestionnaire via l'écran de configuration
+        // du module (champ "Délai annoncé au client") avant activation du transporteur.
         foreach (Language::getLanguages(false) as $lang) {
-            $carrier->delay[$lang['id_lang']] = '';
+            $carrier->delay[$lang['id_lang']] = $this->l('Délai à configurer');
         }
 
         if (!$carrier->add()) {

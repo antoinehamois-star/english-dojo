@@ -14,6 +14,17 @@
    Seul le moteur de calcul tarifaire pur PHP a été exécuté et vérifié (25
    tests, voir `RAPPORT_TESTS.md`).
 
+   **Confirmation concrète de ce risque** : lors du premier essai d'installation
+   sur un vrai PrestaShop 1.7.8.11 par le gestionnaire OK-LA, l'installation a
+   échoué avec `PrestaShopException: La propriété Carrier->delay est vide.`
+   Le champ `delay` du transporteur est obligatoire côté cœur PrestaShop
+   (validation `ObjectModel`) ; `createOwnCarrier()` l'initialisait à tort avec
+   une chaîne vide. Corrigé (commit suivant) en l'initialisant à une valeur
+   neutre (« Délai à configurer »), remplacée ensuite par le gestionnaire via
+   l'écran de configuration. Ce type d'erreur — invisible sans exécution
+   réelle — est précisément ce que `README.md` demandait de vérifier en
+   recette avant toute mise en production.
+
 2. **Deux fichiers de la mission initiale jamais fournis** :
    `OKLA-Schenker-tariff-spec-v1.xlsx` et `.json`. Remplacés par
    `schenker_tarifs_extraits.{json,csv}`, qui portent eux-mêmes la mention
