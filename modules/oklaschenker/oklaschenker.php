@@ -197,7 +197,9 @@ class Oklaschenker extends CarrierModule
         // module), à restreindre ensuite par le gestionnaire depuis le back-office standard
         // Transporteurs de PrestaShop — le module ne restreint aucun périmètre inventé.
         $groups = Group::getGroups((int) Context::getContext()->language->id);
-        $groupIds = array_map(static fn ($g) => (int) $g['id_group'], $groups);
+        $groupIds = array_map(function ($g) {
+            return (int) $g['id_group'];
+        }, $groups);
         if (!empty($groupIds)) {
             $carrier->setGroups($groupIds);
         }

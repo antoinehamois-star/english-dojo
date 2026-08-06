@@ -108,7 +108,9 @@ class AdminOklaSchenkerController extends AdminController
             'surcharges_enabled' => array_combine(
                 OklaSchenkerRateCalculator::AUTO_SURCHARGE_CODES,
                 array_map(
-                    static fn ($code) => OklaSchenkerConfig::isSurchargeEnabled($code),
+                    function ($code) {
+                        return OklaSchenkerConfig::isSurchargeEnabled($code);
+                    },
                     OklaSchenkerRateCalculator::AUTO_SURCHARGE_CODES
                 )
             ),

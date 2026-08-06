@@ -68,11 +68,15 @@ class OklaSchenkerArrayTariffRepository implements OklaSchenkerTariffRepositoryI
         }
 
         foreach ($repo->less100ByDepartment as &$brackets) {
-            usort($brackets, static fn ($a, $b) => $a['min_kg'] <=> $b['min_kg']);
+            usort($brackets, function ($a, $b) {
+                return $a['min_kg'] <=> $b['min_kg'];
+            });
         }
         unset($brackets);
         foreach ($repo->over100ByDepartment as &$brackets) {
-            usort($brackets, static fn ($a, $b) => $a['min_kg'] <=> $b['min_kg']);
+            usort($brackets, function ($a, $b) {
+                return $a['min_kg'] <=> $b['min_kg'];
+            });
         }
         unset($brackets);
 

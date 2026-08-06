@@ -25,6 +25,25 @@
    réelle — est précisément ce que `README.md` demandait de vérifier en
    recette avant toute mise en production.
 
+   **Deuxième confirmation, plus grave** : après correction du bug ci-dessus,
+   l'accès à la page de configuration échouait systématiquement avec
+   « Le contrôleur AdminOklaSchenkerController est manquant ou non valable. »,
+   y compris après plusieurs purges de cache et réinstallations. Cause
+   identifiée : le code utilisait de la syntaxe PHP 7.4+ (fonctions fléchées
+   `fn (...) => ...`, propriété de classe typée `private Type $x;`) dans
+   `AdminOklaSchenkerController.php`, `oklaschenker.php` et
+   `OklaSchenkerArrayTariffRepository.php`. Sur un serveur exécutant une
+   version de PHP antérieure à 7.4, ceci provoque une erreur de syntaxe
+   fatale et silencieuse au chargement du fichier (les erreurs d'affichage
+   sont désactivées en mode production dans `config/defines.inc.php`), que
+   PrestaShop traduit en message générique « contrôleur manquant ». Corrigé
+   en remplaçant ces constructions par leur équivalent compatible PHP 7.1+
+   (closures classiques `function (...) { return ...; }`, propriété non
+   typée avec annotation `@var`). Ce diagnostic n'aurait pas pu être posé
+   sans les retours d'installation réels du gestionnaire OK-LA — la
+   compatibilité PHP exacte du serveur cible n'était pas connue au moment du
+   développement initial.
+
 2. **Deux fichiers de la mission initiale jamais fournis** :
    `OKLA-Schenker-tariff-spec-v1.xlsx` et `.json`. Remplacés par
    `schenker_tarifs_extraits.{json,csv}`, qui portent eux-mêmes la mention

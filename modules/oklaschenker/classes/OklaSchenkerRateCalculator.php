@@ -34,7 +34,8 @@ class OklaSchenkerRateCalculator
     /** Poids maximal couvert par la grille tarifaire fournie (au-delà : devis manuel). */
     public const MAX_COVERED_WEIGHT_KG = 999.0;
 
-    private OklaSchenkerTariffRepositoryInterface $repository;
+    /** @var OklaSchenkerTariffRepositoryInterface */
+    private $repository;
 
     public function __construct(OklaSchenkerTariffRepositoryInterface $repository)
     {
