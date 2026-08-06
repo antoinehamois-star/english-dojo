@@ -1,0 +1,62 @@
+# Rapport des points bloquants — oklaschenker (Phase 1)
+
+## Bloquants pour une mise en production directe
+
+1. **Aucune instance PrestaShop réelle disponible pendant ce développement.**
+   Ni le dépôt du site OK-LA, ni une base de données, ni un environnement
+   d'exécution PrestaShop n'étaient accessibles. Conséquence directe :
+   - l'installation du module (`install()`, création du transporteur, création
+     des tables) n'a **jamais été exécutée réellement** ;
+   - l'intégration au tunnel de commande (`getOrderShippingCost*`) n'a **jamais
+     été exécutée réellement** ;
+   - le rapport des anciens transporteurs « AD SCHENKER » n'a **jamais été
+     généré sur des données réelles**.
+   Seul le moteur de calcul tarifaire pur PHP a été exécuté et vérifié (25
+   tests, voir `RAPPORT_TESTS.md`).
+
+2. **Deux fichiers de la mission initiale jamais fournis** :
+   `OKLA-Schenker-tariff-spec-v1.xlsx` et `.json`. Remplacés par
+   `schenker_tarifs_extraits.{json,csv}`, qui portent eux-mêmes la mention
+   *« Validation humaine requise avant utilisation en production »* — cette
+   validation humaine reste à faire par un responsable OK-LA/Schenker avant
+   d'utiliser les tarifs en clientèle réelle.
+
+3. **Liste des départements « Région parisienne » non fournie** par la
+   source : le supplément correspondant (3,36 €) est importé en base mais
+   **désactivé par défaut**, en attente d'une confirmation du périmètre
+   géographique exact par le gestionnaire.
+
+4. **Aucune règle d'altitude, de gabarit ou de poids volumétrique** n'est
+   présente dans les fichiers fournis : ces critères, demandés dans la
+   mission initiale, ne sont donc pas implémentés (plutôt que d'inventer des
+   seuils). Seul le plafond réel de la grille (999 kg) est appliqué.
+
+5. **Aucun supplément « carburant » distinct** n'existe dans la source ; seule
+   une « Contribution Transition Énergétique » est présente et implémentée à
+   sa place. À clarifier avec Schenker si un supplément carburant séparé
+   existe réellement dans le contrat.
+
+## Hors périmètre — assumé, pas un manque
+
+6. **Aucun appel SOAP, aucune réservation, aucune étiquette** : exclu
+   explicitement de la Phase 1 par `SPEC_MODULE_PRESTASHOP_SCHENKER.md`. La
+   documentation `ConnectBookingWebservice_v1.3.3.xlsx` a été analysée et
+   synthétisée (`ANALYSE_TECHNIQUE.md` §3) pour préparer une Phase 2 sans
+   perte d'information, mais aucun code d'appel n'est livré.
+
+## Non-invention — rappel des choix de conception associés
+
+- Aucun identifiant Schenker (Access Key, numéro de compte) n'est pré-rempli.
+- Aucun tarif, aucun seuil, aucune règle non présents dans
+  `schenker_tarifs_extraits.json` n'ont été ajoutés.
+- Quand une donnée manque pour calculer un tarif fiable, le module renvoie
+  explicitement « aucun tarif disponible / devis manuel requis » plutôt que
+  d'estimer une valeur.
+
+## Recommandation
+
+Avant toute activation en production : installer sur un environnement de
+recette OK-LA réel, exécuter le rapport de détection des anciens
+transporteurs, importer et contrôler la grille, faire valider les 4
+suppléments automatiques par un responsable métier, puis passer plusieurs
+commandes de test avant d'activer le transporteur pour la clientèle.
