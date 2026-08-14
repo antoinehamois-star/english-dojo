@@ -88,6 +88,33 @@
    décidée qu'à partir des retours d'installation réels — elle n'était pas
    anticipable au moment du développement initial hors ligne.
 
+   **Cinquième confirmation, la plus subtile** : une fois `getContent()`
+   fonctionnel et le transporteur activé (taxe/délai enregistrés, grille
+   importée, moteur validé sur deux cas réels via l'outil de test — 20 kg et
+   110 kg vers Paris), **le transporteur restait invisible dans le tunnel de
+   commande**, quelles que soient l'activation, l'association boutique, les
+   groupes clients, les zones ou les restrictions par fiche produit — toutes
+   vérifiées correctes en base par requêtes SQL directes avec le
+   gestionnaire. Une version de diagnostic journalisant systématiquement
+   chaque sortie de `getOrderShippingCost()` (y compris les cas jusque-là
+   silencieux) a confirmé que **le module n'était jamais appelé du tout**.
+   Cause identifiée en lisant directement `classes/Carrier.php` du dépôt
+   officiel PrestaShop 1.7.8.11 (`Carrier::getCarriers()`, appelée par
+   `getCarriersForOrder()`) : les transporteurs de type module ne sont inclus
+   dans la liste des transporteurs éligibles au tunnel de commande que si
+   `need_range = 1` (condition SQL exacte :
+   `AND (c.is_module = 0 OR c.need_range = 1)`). `createOwnCarrier()`
+   initialisait ce champ à `false`, en supposant à tort qu'un transporteur
+   externe (`shipping_external = true`) n'en avait pas besoin — alors que
+   `need_range` conditionne en réalité l'apparition même du transporteur dans
+   la liste, indépendamment de `shipping_external`. Corrigé (mis à `true`),
+   avec une correction automatique supplémentaire à chaque activation du
+   transporteur (`processActivateCarrier()`) pour rattraper les transporteurs
+   déjà créés par une version antérieure sans réinstallation. Ce bug n'avait
+   pu être détecté par aucun des 25 tests du moteur tarifaire (qui testent le
+   calcul pur, jamais l'éligibilité du transporteur côté PrestaShop), ni par
+   une simple relecture du code sans exécution réelle.
+
    **Quatrième confirmation** : une fois la page de configuration effectivement
    accessible via `getContent()`, l'enregistrement du formulaire (groupe de
    taxe + délai) provoquait une erreur 500 Symfony : « Attempted to call an

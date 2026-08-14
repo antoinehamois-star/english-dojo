@@ -150,7 +150,16 @@ class Oklaschenker extends CarrierModule
         $carrier->range_behavior = 0;
         $carrier->shipping_external = true;
         $carrier->external_module_name = $this->name;
-        $carrier->need_range = false;
+        // OBLIGATOIRE à true : Carrier::getCarriers() (appelée par getCarriersForOrder(),
+        // qui construit la liste des transporteurs éligibles au tunnel de commande) filtre
+        // les transporteurs "module" avec la condition SQL
+        // « AND (c.is_module = 0 OR c.need_range = 1) ». Avec is_module=1 et need_range=0,
+        // cette condition est toujours fausse : le transporteur est exclu de la liste AVANT
+        // même que PrestaShop n'appelle getOrderShippingCostExternal(). Confirmé en
+        // production le 14/08/2026 (aucune ligne de calcul journalisée malgré transporteur
+        // actif, boutique/groupes/zones/produit tous corrects) et vérifié directement contre
+        // classes/Carrier.php du dépôt officiel PrestaShop 1.7.8.11.
+        $carrier->need_range = true;
         $carrier->shipping_method = Carrier::SHIPPING_METHOD_PRICE;
         $carrier->url = '';
         $carrier->id_tax_rules_group = 0; // à configurer explicitement en back-office
@@ -707,6 +716,10 @@ class Oklaschenker extends CarrierModule
         }
 
         $carrier->active = $activate;
+        // Auto-correction : force need_range=1 à chaque activation, pour rattraper
+        // automatiquement les transporteurs créés avant le correctif du 14/08/2026
+        // (voir createOwnCarrier()) sans nécessiter d'intervention SQL manuelle.
+        $carrier->need_range = true;
         $carrier->save();
 
         OklaSchenkerLogger::log(OklaSchenkerLogger::LEVEL_INFO, 'carrier', $activate ? 'Transporteur activé' : 'Transporteur désactivé', ['id_carrier' => $idCarrier]);
