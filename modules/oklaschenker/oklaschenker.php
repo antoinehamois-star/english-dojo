@@ -585,6 +585,8 @@ class Oklaschenker extends CarrierModule
                 $output .= $this->processRefreshLegacyReport();
             } elseif (Tools::isSubmit('oklaSchenkerDisableLegacyCarrier') && Tools::isSubmit('oklaSchenkerConfirmDisableLegacy')) {
                 $output .= $this->processDisableLegacyCarrier((int) Tools::getValue('oklaSchenkerDisableLegacyCarrier'));
+            } elseif (Tools::isSubmit('oklaSchenkerExtendCarrierToRestrictedProducts')) {
+                $output .= $this->processExtendCarrierToRestrictedProducts();
             } elseif (Tools::isSubmit('oklaSchenkerPurgeData') && Tools::getValue('oklaSchenkerPurgeConfirmText') === 'SUPPRIMER') {
                 $output .= $this->processPurgeData();
             }
@@ -909,6 +911,56 @@ class Oklaschenker extends CarrierModule
         ]);
 
         return $this->displayConfirmation($this->l('Ancien transporteur désactivé (non supprimé).'));
+    }
+
+    /**
+     * Ajoute Schenker - OK-LA à la liste des transporteurs autorisés de chaque produit
+     * qui a une restriction de transporteurs existante (table ps_product_carrier),
+     * quel que soit le transporteur auquel il était restreint auparavant.
+     *
+     * N'ajoute JAMAIS de restriction sur un produit qui n'en a aucune (ces produits
+     * proposent déjà tous les transporteurs actifs par défaut, comportement natif
+     * PrestaShop). N'enlève ni ne modifie aucune ligne existante — additif et
+     * réversible, jamais un remplacement.
+     *
+     * Le Gestionnaire SQL de PrestaShop n'autorisant que des requêtes SELECT,
+     * cette action ne peut être faite qu'ici, via l'accès base standard du module.
+     */
+    private function processExtendCarrierToRestrictedProducts(): string
+    {
+        $idCarrier = (int) OklaSchenkerConfig::get(OklaSchenkerConfig::CARRIER_ID);
+        $carrier = new Carrier($idCarrier);
+        if (!Validate::isLoadedObject($carrier)) {
+            return $this->displayError($this->l('Transporteur introuvable.'));
+        }
+        $idReference = (int) $carrier->id_reference;
+
+        $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'product_carrier` (id_product, id_shop, id_carrier_reference)
+            SELECT DISTINCT id_product, id_shop, ' . $idReference . '
+            FROM `' . _DB_PREFIX_ . 'product_carrier`
+            WHERE id_carrier_reference != ' . $idReference . '
+            AND (id_product, id_shop) NOT IN (
+                SELECT id_product, id_shop FROM `' . _DB_PREFIX_ . 'product_carrier` WHERE id_carrier_reference = ' . $idReference . '
+            )';
+
+        $success = Db::getInstance()->execute($sql);
+        $affected = $success ? (int) Db::getInstance()->Affected_rows() : 0;
+
+        OklaSchenkerLogger::log(
+            $success ? OklaSchenkerLogger::LEVEL_INFO : OklaSchenkerLogger::LEVEL_ERROR,
+            'product_carrier',
+            'Extension du transporteur Schenker - OK-LA aux produits restreints',
+            ['id_reference' => $idReference, 'rows_added' => $affected, 'success' => $success]
+        );
+
+        if (!$success) {
+            return $this->displayError($this->l('Échec de l\'extension aux produits restreints.'));
+        }
+
+        return $this->displayConfirmation(sprintf(
+            $this->l('Transporteur ajouté à la liste autorisée de %d produit(s) restreint(s). Les produits sans restriction proposaient déjà Schenker - OK-LA automatiquement.'),
+            $affected
+        ));
     }
 
     private function fetchRecentLogs(): array

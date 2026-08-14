@@ -110,6 +110,18 @@
             {/if}
         </button>
     </form>
+
+    <hr />
+    <h4>{l s='Rendre Schenker - OK-LA disponible sur les produits restreints' mod='oklaschenker'}</h4>
+    <p class="help-block">
+        {l s='Certains produits de votre catalogue limitent les transporteurs proposés à une liste précise (onglet "Expédition" de la fiche produit). Les produits SANS restriction proposent déjà tous les transporteurs actifs, dont celui-ci, automatiquement.' mod='oklaschenker'}
+        {l s='Cette action ajoute Schenker - OK-LA à la liste autorisée de tous les produits qui ont une restriction existante, sans en retirer aucun transporteur déjà autorisé (réversible, rien n\'est supprimé).' mod='oklaschenker'}
+    </p>
+    <form method="post" action="{$okla_config_form_action}" onsubmit="return confirm('{l s='Ajouter Schenker - OK-LA à la liste des transporteurs autorisés de tous les produits restreints ? Aucun transporteur existant ne sera retiré.' mod='oklaschenker'}');">
+        <input type="hidden" name="submitOklaSchenkerModule" value="1" />
+        <input type="hidden" name="oklaSchenkerExtendCarrierToRestrictedProducts" value="1" />
+        <button type="submit" class="btn btn-default">{l s='Étendre aux produits restreints' mod='oklaschenker'}</button>
+    </form>
 </div>
 
 <div class="panel">
