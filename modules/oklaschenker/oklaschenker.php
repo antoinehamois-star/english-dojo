@@ -286,59 +286,118 @@ class Oklaschenker extends CarrierModule
      */
     public function getOrderShippingCost($params, $shipping_cost)
     {
-        $idCarrier = (int) OklaSchenkerConfig::get(OklaSchenkerConfig::CARRIER_ID);
-        $carrier = new Carrier($idCarrier);
-        if (!Validate::isLoadedObject($carrier) || !$carrier->active) {
-            return false;
-        }
-
-        $cart = $params instanceof Cart ? $params : Context::getContext()->cart;
-        if (!Validate::isLoadedObject($cart) || !$cart->id_address_delivery) {
-            return false;
-        }
-
-        $address = new Address((int) $cart->id_address_delivery);
-        if (!Validate::isLoadedObject($address)) {
-            return false;
-        }
-
-        $countryIso = '';
-        if ($address->id_country) {
-            $country = new Country((int) $address->id_country);
-            if (Validate::isLoadedObject($country)) {
-                $countryIso = $country->iso_code;
+        try {
+            $idCart = null;
+            if ($params instanceof Cart) {
+                $idCart = (int) $params->id;
+            } elseif (Validate::isLoadedObject(Context::getContext()->cart)) {
+                $idCart = (int) Context::getContext()->cart->id;
             }
-        }
 
-        $resolver = new OklaSchenkerAddressResolver();
-        $resolved = $resolver->resolveDepartment([
-            'postcode' => $address->postcode,
-            'country_iso' => $countryIso,
-        ]);
+            $idCarrier = (int) OklaSchenkerConfig::get(OklaSchenkerConfig::CARRIER_ID);
+            $carrier = new Carrier($idCarrier);
+            if (!Validate::isLoadedObject($carrier)) {
+                $this->logCalculationRaw($idCart, null, null, false, 'CARRIER_NOT_LOADED', ['id_carrier' => $idCarrier]);
 
-        if (!$resolved['ok']) {
-            $this->logCalculation($cart, null, null, false, $resolved['reason']);
+                return false;
+            }
+            if (!$carrier->active) {
+                $this->logCalculationRaw($idCart, null, null, false, 'CARRIER_INACTIVE', ['id_carrier' => $idCarrier]);
+
+                return false;
+            }
+
+            $cart = $params instanceof Cart ? $params : Context::getContext()->cart;
+            if (!Validate::isLoadedObject($cart)) {
+                $this->logCalculationRaw($idCart, null, null, false, 'CART_NOT_LOADED', []);
+
+                return false;
+            }
+            if (!$cart->id_address_delivery) {
+                $this->logCalculationRaw($idCart, null, null, false, 'NO_DELIVERY_ADDRESS', []);
+
+                return false;
+            }
+
+            $address = new Address((int) $cart->id_address_delivery);
+            if (!Validate::isLoadedObject($address)) {
+                $this->logCalculationRaw($idCart, null, null, false, 'ADDRESS_NOT_LOADED', ['id_address_delivery' => (int) $cart->id_address_delivery]);
+
+                return false;
+            }
+
+            $countryIso = '';
+            if ($address->id_country) {
+                $country = new Country((int) $address->id_country);
+                if (Validate::isLoadedObject($country)) {
+                    $countryIso = $country->iso_code;
+                }
+            }
+
+            $resolver = new OklaSchenkerAddressResolver();
+            $resolved = $resolver->resolveDepartment([
+                'postcode' => $address->postcode,
+                'country_iso' => $countryIso,
+            ]);
+
+            if (!$resolved['ok']) {
+                $this->logCalculation($cart, null, null, false, $resolved['reason']);
+
+                return false;
+            }
+
+            $weightKg = (float) $cart->getTotalWeight();
+            if ($weightKg <= 0) {
+                $this->logCalculation($cart, $resolved['department'], $weightKg, false, OklaSchenkerRateCalculator::REASON_INVALID_WEIGHT);
+
+                return false;
+            }
+
+            $calculator = new OklaSchenkerRateCalculator(new OklaSchenkerDbTariffRepository());
+            $trace = $calculator->calculate($resolved['department'], $weightKg, new DateTimeImmutable());
+
+            $this->logCalculation($cart, $resolved['department'], $weightKg, $trace['ok'], $trace['reason'] ?? null, $trace);
+
+            if (!$trace['ok']) {
+                return false;
+            }
+
+            return (float) $trace['total_price_ht'];
+        } catch (\Throwable $e) {
+            // Ne jamais laisser une exception ici casser l'affichage du tunnel de commande —
+            // mais on la journalise systématiquement pour ne plus jamais avoir un échec
+            // totalement silencieux (c'est précisément ce qui manquait pour diagnostiquer
+            // le cas réel du 14/08/2026 : transporteur invisible, aucune ligne de journal).
+            PrestaShopLogger::addLog('OklaSchenker: exception dans getOrderShippingCost — ' . $e->getMessage(), 3);
 
             return false;
         }
+    }
 
-        $weightKg = (float) $cart->getTotalWeight();
-        if ($weightKg <= 0) {
-            $this->logCalculation($cart, $resolved['department'], $weightKg, false, OklaSchenkerRateCalculator::REASON_INVALID_WEIGHT);
-
-            return false;
+    /**
+     * Variante de logCalculation() utilisable même quand le Cart n'a pas pu être chargé
+     * (id_cart peut alors être null) — nécessaire pour journaliser les échecs les plus
+     * précoces (transporteur non chargé, panier absent) qui, avant ce correctif,
+     * échouaient totalement en silence.
+     */
+    private function logCalculationRaw(?int $idCart, ?string $department, ?float $weightKg, bool $ok, ?string $reason, array $trace = []): void
+    {
+        try {
+            Db::getInstance()->insert('oklaschenker_calc_log', [
+                'id_cart' => $idCart,
+                'id_order' => null,
+                'department' => $department !== null ? pSQL($department) : null,
+                'weight_kg' => $weightKg,
+                'ok' => $ok ? 1 : 0,
+                'reason' => $reason !== null ? pSQL($reason) : null,
+                'base_price_ht' => null,
+                'total_price_ht' => null,
+                'trace_json' => pSQL(json_encode($trace, JSON_UNESCAPED_UNICODE)),
+                'date_add' => date('Y-m-d H:i:s'),
+            ]);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('OklaSchenker: échec écriture calc_log (raw) — ' . $e->getMessage(), 3);
         }
-
-        $calculator = new OklaSchenkerRateCalculator(new OklaSchenkerDbTariffRepository());
-        $trace = $calculator->calculate($resolved['department'], $weightKg, new DateTimeImmutable());
-
-        $this->logCalculation($cart, $resolved['department'], $weightKg, $trace['ok'], $trace['reason'] ?? null, $trace);
-
-        if (!$trace['ok']) {
-            return false;
-        }
-
-        return (float) $trace['total_price_ht'];
     }
 
     private function logCalculation(Cart $cart, ?string $department, ?float $weightKg, bool $ok, ?string $reason, array $trace = []): void
