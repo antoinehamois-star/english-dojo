@@ -384,6 +384,18 @@ class Oklaschenker extends CarrierModule
     }
 
     /**
+     * Densité minimale nationale en dessous de laquelle le contrat Schenker distingue
+     * un traitement particulier (tableau de contraintes de service DB SCHENKER fourni
+     * par le gestionnaire le 14/08/2026 : « Densité minimale (national) : 50 kg/m3 »,
+     * identique sur les 5 services system/system premium/system home/pallet/pallet
+     * premium). Ce document ne précise PAS le mode de facturation en dessous de ce
+     * seuil (poids volumétrique recalculé ? refus ? autre ?) — en l'absence de cette
+     * information, le module ne modifie JAMAIS le tarif calculé sur cette base. Il
+     * affiche uniquement un avertissement de vérification manuelle en back-office.
+     */
+    private const MIN_DENSITY_KG_PER_M3 = 50.0;
+
+    /**
      * Bloc d'information Schenker dans la page commande du back-office (lecture seule,
      * Phase 1 : pas d'action de réservation/étiquette, seulement le détail du calcul
      * tarifaire au moment de la commande).
@@ -411,9 +423,63 @@ class Oklaschenker extends CarrierModule
         $this->context->smarty->assign([
             'okla_order' => $order,
             'okla_last_calc' => $lastCalc ?: null,
+            'okla_density_warning' => $this->computeOrderDensityWarning($order),
         ]);
 
         return $this->fetch('module:oklaschenker/views/templates/hook/admin_order_block.tpl');
+    }
+
+    /**
+     * Calcule la densité (poids réel / volume) de la commande à partir des dimensions
+     * renseignées en fiche produit (largeur/hauteur/profondeur, supposées en cm — unité
+     * par défaut de PrestaShop) et compare au seuil contractuel Schenker. Ne renvoie
+     * jamais d'estimation si une dimension est manquante ou nulle sur au moins un
+     * produit de la commande : mieux vaut ne pas afficher d'alerte qu'en afficher une
+     * fondée sur une donnée absente.
+     */
+    private function computeOrderDensityWarning(Order $order): ?array
+    {
+        $products = $order->getProducts();
+        if (empty($products)) {
+            return null;
+        }
+
+        $totalWeightKg = 0.0;
+        $totalVolumeM3 = 0.0;
+
+        foreach ($products as $line) {
+            $quantity = (float) $line['product_quantity'];
+            $product = new Product((int) $line['product_id'], false, (int) $this->context->language->id);
+            if (!Validate::isLoadedObject($product)) {
+                return null;
+            }
+
+            $width = (float) $product->width;
+            $height = (float) $product->height;
+            $depth = (float) $product->depth;
+            $weight = (float) $product->weight;
+
+            if ($width <= 0.0 || $height <= 0.0 || $depth <= 0.0 || $quantity <= 0.0) {
+                return null;
+            }
+
+            $totalWeightKg += $weight * $quantity;
+            $totalVolumeM3 += ($width / 100) * ($height / 100) * ($depth / 100) * $quantity;
+        }
+
+        if ($totalVolumeM3 <= 0.0) {
+            return null;
+        }
+
+        $density = $totalWeightKg / $totalVolumeM3;
+
+        return [
+            'total_weight_kg' => $totalWeightKg,
+            'total_volume_m3' => $totalVolumeM3,
+            'density_kg_m3' => $density,
+            'below_threshold' => $density < self::MIN_DENSITY_KG_PER_M3,
+            'threshold' => self::MIN_DENSITY_KG_PER_M3,
+        ];
     }
 
     // ------------------------------------------------------------------

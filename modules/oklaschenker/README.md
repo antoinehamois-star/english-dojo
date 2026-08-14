@@ -73,7 +73,10 @@ dangereuse », en tapant `SUPPRIMER` pour confirmer.
 
 Inclus : calcul tarifaire local (département + poids + suppléments identifiés
 sans ambiguïté), affichage dans le tunnel de commande, outil de test tarifaire,
-import contrôlé de la grille, bloc d'information en page commande.
+import contrôlé de la grille, bloc d'information en page commande (avec
+avertissement de densité < 50 kg/m³ si les dimensions produits sont
+renseignées — vérification manuelle, jamais un correctif de prix automatique,
+voir `docs/RAPPORT_POINTS_BLOQUANTS.md` point 4).
 
 Explicitement exclu : tout appel SOAP Schenker, toute réservation, toute
 étiquette/waybill, tout numéro de suivi réel.

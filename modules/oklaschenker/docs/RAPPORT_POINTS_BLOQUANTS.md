@@ -114,10 +114,24 @@
    **désactivé par défaut**, en attente d'une confirmation du périmètre
    géographique exact par le gestionnaire.
 
-4. **Aucune règle d'altitude, de gabarit ou de poids volumétrique** n'est
-   présente dans les fichiers fournis : ces critères, demandés dans la
-   mission initiale, ne sont donc pas implémentés (plutôt que d'inventer des
-   seuils). Seul le plafond réel de la grille (999 kg) est appliqué.
+4. **Aucune règle d'altitude, de gabarit ou de poids volumétrique n'est
+   appliquée au tarif calculé.** Un tableau des contraintes de service DB
+   SCHENKER (fourni par le gestionnaire le 14/08/2026 : plafonds de poids,
+   dimensions, volume et une ligne « Densité minimale (national) : 50 kg/m³ »
+   par type de service system/pallet) a depuis été analysé. Il donne des
+   **limites d'éligibilité physiques**, pas une formule de tarification : il
+   ne précise à aucun endroit ce qui se passe en dessous de ce seuil de
+   densité (facturation au poids volumétrique recalculé ? refus du colis ?
+   autre ?). En l'absence de cette information, **le tarif calculé n'est
+   toujours basé que sur le poids réel** — aucune formule n'a été inventée.
+   Un avertissement (pas un correctif de prix) a été ajouté sur la page
+   commande du back-office : si les dimensions des produits sont renseignées
+   dans le catalogue, le module calcule la densité réelle de la commande et
+   signale visuellement quand elle est sous 50 kg/m³, pour une vérification
+   manuelle avant expédition. Si les dimensions ne sont pas renseignées en
+   fiche produit, aucun avertissement n'est affiché (pas d'estimation sur
+   donnée absente). Seul le plafond réel de la grille de prix (999 kg) reste
+   appliqué au calcul lui-même.
 
 5. **Aucun supplément « carburant » distinct** n'existe dans la source ; seule
    une « Contribution Transition Énergétique » est présente et implémentée à
