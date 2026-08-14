@@ -70,7 +70,8 @@ class Oklaschenker extends CarrierModule
         }
 
         $idCarrier = (int) OklaSchenkerConfig::get(OklaSchenkerConfig::CARRIER_ID);
-        if ($idCarrier <= 0 || !Validate::isLoadedObject(new Carrier($idCarrier))) {
+        $existingCarrier = $idCarrier > 0 ? new Carrier($idCarrier) : null;
+        if ($idCarrier <= 0 || !Validate::isLoadedObject($existingCarrier)) {
             $idCarrier = $this->createOwnCarrier();
             if ($idCarrier === null) {
                 $this->_errors[] = $this->l('Échec de la création du transporteur Schenker - OK-LA.');
@@ -78,6 +79,18 @@ class Oklaschenker extends CarrierModule
                 return false;
             }
             OklaSchenkerConfig::set(OklaSchenkerConfig::CARRIER_ID, $idCarrier);
+        } elseif ($existingCarrier->deleted) {
+            // Le cœur PrestaShop (Module::uninstall()) marque automatiquement
+            // deleted=1 sur tout transporteur dont external_module_name correspond
+            // au module désinstallé — y compris quand notre propre uninstall() ne
+            // supprime rien intentionnellement. Confirmé en production le
+            // 14/08/2026 : transporteur toujours invisible malgré active=1 et
+            // need_range=1 corrects, à cause de deleted=1 resté après une
+            // désinstallation/réinstallation complète. On restaure le même
+            // transporteur plutôt que d'en créer un nouveau.
+            $existingCarrier->deleted = false;
+            $existingCarrier->need_range = true;
+            $existingCarrier->save();
         }
 
         $this->seedSurchargeCatalog();
@@ -716,10 +729,14 @@ class Oklaschenker extends CarrierModule
         }
 
         $carrier->active = $activate;
-        // Auto-correction : force need_range=1 à chaque activation, pour rattraper
-        // automatiquement les transporteurs créés avant le correctif du 14/08/2026
-        // (voir createOwnCarrier()) sans nécessiter d'intervention SQL manuelle.
+        // Auto-correction : force need_range=1 et deleted=0 à chaque activation, pour
+        // rattraper automatiquement (a) les transporteurs créés avant le correctif du
+        // 14/08/2026 (need_range) et (b) les transporteurs marqués deleted=1 par le
+        // cœur PrestaShop lors d'une désinstallation antérieure du module (voir
+        // install()) — sans nécessiter d'intervention SQL manuelle, le Gestionnaire
+        // SQL de PrestaShop n'autorisant de toute façon que des requêtes SELECT.
         $carrier->need_range = true;
+        $carrier->deleted = false;
         $carrier->save();
 
         OklaSchenkerLogger::log(OklaSchenkerLogger::LEVEL_INFO, 'carrier', $activate ? 'Transporteur activé' : 'Transporteur désactivé', ['id_carrier' => $idCarrier]);

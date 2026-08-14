@@ -115,6 +115,24 @@
    calcul pur, jamais l'éligibilité du transporteur côté PrestaShop), ni par
    une simple relecture du code sans exécution réelle.
 
+   **Sixième confirmation, découverte en corrigeant la cinquième** : après
+   correctif `need_range` et un cycle « Désinstaller / Réinstaller » complet
+   du module (fait par le gestionnaire pour repartir propre), le transporteur
+   restait invisible. Cause : `Module::uninstall()` (méthode du cœur
+   PrestaShop, appelée par `parent::uninstall()` dans notre propre
+   `uninstall()`) marque automatiquement `deleted = 1` sur tout transporteur
+   dont `external_module_name` correspond au module désinstallé — y compris
+   quand notre propre code ne supprime rien intentionnellement. Or
+   `Carrier::getCarriers()` filtre explicitement `WHERE c.deleted = 0`, donc
+   un transporteur marqué supprimé reste invisible même avec `active = 1` et
+   `need_range = 1` corrects. Corrigé en restaurant `deleted = false` à la
+   fois dans `install()` (si le transporteur existant retrouvé via
+   `OKLASCHENKER_CARRIER_ID` est supprimé) et dans `processActivateCarrier()`
+   (à chaque clic sur Activer/Désactiver), pour que la réactivation seule
+   suffise à rattraper ce cas — le Gestionnaire SQL de PrestaShop
+   n'autorisant de toute façon que des requêtes `SELECT`, une correction en
+   base directe n'était pas possible pour le gestionnaire.
+
    **Quatrième confirmation** : une fois la page de configuration effectivement
    accessible via `getContent()`, l'enregistrement du formulaire (groupe de
    taxe + délai) provoquait une erreur 500 Symfony : « Attempted to call an
