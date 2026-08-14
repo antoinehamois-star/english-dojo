@@ -19,7 +19,7 @@ transporteur n'a été touché, aucune commande n'est affectée.
 Uniquement si nécessaire (ex. avant une désinstallation définitive du
 module) :
 
-1. Back-office > Expédition > Schenker - OK-LA > section « Zone dangereuse ».
+1. Back-office > Modules > rechercher « Schenker - OK-LA » > bouton Configurer > section « Zone dangereuse ».
 2. Taper `SUPPRIMER` dans le champ de confirmation, puis cliquer sur
    **Supprimer définitivement les données du module**.
 3. Cette action exécute les requêtes de `sql/uninstall.php` (suppression des

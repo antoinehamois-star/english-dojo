@@ -152,10 +152,14 @@ développement** (aucun dépôt GitHub contenant le cœur PrestaShop n'est acces
 cette session — seul `english-dojo`, une application web sans rapport, existe côté
 compte GitHub connecté). En conséquence :
 - Le code de détection (requête sur `ps_carrier` par nom `LIKE '%AD SCHENKER%'` ou
-  `LIKE '%SCHENKER%'`) est écrit et prêt à l'emploi dans `AdminOklaSchenkerController`.
-- **Il n'a jamais été exécuté contre une vraie base** : aucune liste réelle de
-  transporteurs existants n'a pu être produite. Le rapport de doublons affiché en
-  back-office ne sera fiable qu'une fois le module installé sur le vrai site.
+  `LIKE '%SCHENKER%'`) est écrit dans `OklaSchenkerLegacyCarrierDetector` et appelé
+  depuis `oklaschenker::getContent()` (section « Anciens transporteurs évoquant
+  Schenker »).
+- **Il n'a pas encore été exécuté avec succès contre la base réelle du site OK-LA**,
+  car l'installation elle-même a buté sur un problème d'architecture back-office
+  distinct (voir §7 et `RAPPORT_POINTS_BLOQUANTS.md`) avant de pouvoir valider cet
+  écran. Le rapport de doublons ne sera fiable qu'une fois `getContent()` réellement
+  accessible en recette.
 - Le module ne supprime et ne modifie **aucun** transporteur existant, quel que soit le
   résultat de cette détection — conformément à la consigne absolue.
 
@@ -163,18 +167,19 @@ compte GitHub connecté). En conséquence :
 
 ```
 modules/oklaschenker/
-├── oklaschenker.php                         # install/uninstall, hooks de coût transporteur
+├── oklaschenker.php                         # install/uninstall, hooks de coût transporteur, getContent()
 ├── classes/
 │   ├── OklaSchenkerRateCalculator.php       # moteur pur PHP, sans dépendance PrestaShop directe
 │   ├── OklaSchenkerTariffRepositoryInterface.php
 │   ├── OklaSchenkerAddressResolver.php      # adresse PrestaShop -> département/CP
 │   ├── OklaSchenkerConfig.php               # accès Configuration::
 │   ├── OklaSchenkerLogger.php               # journal DB + masquage secrets
+│   ├── OklaSchenkerLegacyCarrierDetector.php
 │   └── Repository/OklaSchenkerDbTariffRepository.php  # implémentation PrestaShop (Db)
-├── controllers/admin/AdminOklaSchenkerController.php
 ├── sql/install.php / uninstall.php
 ├── data/schenker_tarifs_extraits.json       # jeu de données de référence embarqué
-├── views/templates/admin/*.tpl
+├── views/templates/admin/configure.tpl      # écran unique, rendu par getContent()
+├── views/templates/hook/*.tpl
 ├── tests/                                    # tests PHP CLI exécutables sans PrestaShop
 └── docs/
 ```
@@ -185,18 +190,38 @@ et retourne un tableau de trace de calcul détaillé. Cela permet de l'exécuter
 tester réellement en CLI PHP, **sans instance PrestaShop**, ce qui a été fait (voir
 `docs/RAPPORT_TESTS.md`). L'intégration PrestaShop (`Repository/OklaSchenkerDbTariffRepository`,
 hooks `getOrderShippingCost`) suit l'API documentée du Carrier module externe standard
-de PrestaShop 1.7 (pattern utilisé par les modules de transport du marketplace officiel),
-mais **n'a pas pu être exécutée** faute d'instance PrestaShop réelle — voir section 8.
+de PrestaShop 1.7 (pattern utilisé par les modules de transport du marketplace officiel).
+
+**Point d'entrée back-office — choix révisé après tests réels sur le site OK-LA.**
+La première version de ce module exposait son écran de configuration via un `Tab` +
+un `AdminController` dédié (`AdminOklaSchenkerController`), pattern standard et
+documenté pour les modules PrestaShop. Trois installations réelles indépendantes sur
+le site OK-LA (le module d'origine, un module de diagnostic minimal sans dépendance,
+puis une copie sous un nom de fichier jamais vu du serveur) ont toutes échoué de façon
+strictement reproductible avec « Le contrôleur ... est manquant ou non valable. »,
+malgré des ACL et un cache vérifiés corrects (voir `RAPPORT_POINTS_BLOQUANTS.md` pour
+le détail des hypothèses testées et écartées une à une avec le gestionnaire). Un module
+tiers déjà installé sur ce même site (Smartsupp) fonctionnant normalement avec
+`getContent()`, l'architecture a été revue en conséquence : **toute la configuration
+se fait désormais via `oklaschenker::getContent()`**, affichée dans la liste des
+modules via le bouton « Configurer » (`Modules > Schenker - OK-LA > Configurer`),
+sans `Tab` ni `AdminController` séparé. `install()` ne crée plus aucun `Tab`. Toute la
+logique métier (calcul, import, détection des anciens transporteurs, journaux, zone
+dangereuse) est inchangée — seul le point d'entrée back-office a changé.
 
 ## 8. Points bloquants explicites
 
-1. **Aucun dépôt PrestaShop/OK-LA accessible.** Le module est écrit conformément à
-   l'API PrestaShop 1.7.8 documentée (classes `Module`, `Carrier`, `ObjectModel`,
-   `AdminController`, `Db`), mais son **installation réelle n'a pas pu être testée**
-   dans cette session. Aucune capture d'écran, aucun résultat d'installation n'est donc
-   revendiqué comme vérifié.
+1. **Aucun dépôt PrestaShop/OK-LA accessible pendant le développement initial hors
+   ligne.** Le module a été écrit conformément à l'API PrestaShop 1.7.8 documentée,
+   puis réellement testé par le gestionnaire OK-LA sur le site de production — voir
+   §7 et `RAPPORT_POINTS_BLOQUANTS.md` pour l'historique complet des essais
+   d'installation réels et des corrections qui en ont découlé (bug `Carrier->delay`,
+   incompatibilité PHP 7.4, puis abandon de l'architecture Tab/AdminController au
+   profit de `getContent()`).
 2. **Anciens transporteurs AD SCHENKER non observables** (cf. §6) : le rapport de
-   détection est fonctionnel mais jamais exécuté sur données réelles.
+   détection est fonctionnel mais pas encore exécuté avec succès sur données réelles
+   (l'écran qui l'affiche n'était pas accessible tant que le point 1 n'était pas
+   résolu).
 3. **Deux fichiers de la mission initiale jamais fournis** (`OKLA-Schenker-tariff-spec-v1.xlsx/.json`) :
    remplacés par `schenker_tarifs_extraits.{json,csv}`, qui portent eux-mêmes la mention
    « validation humaine requise avant utilisation en production ».

@@ -13,7 +13,7 @@ if (!defined('_PS_VERSION_')) {
  *
  * Ces requêtes ne sont exécutées que via l'action explicite et confirmée
  * « Supprimer définitivement les données du module » de
- * AdminOklaSchenkerController::processPurgeData(), qui exige une
+ * oklaschenker::getContent()::processPurgeData(), qui exige une
  * confirmation dédiée distincte de la désinstallation du module.
  */
 

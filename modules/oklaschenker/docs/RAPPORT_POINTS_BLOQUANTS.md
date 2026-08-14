@@ -44,6 +44,50 @@
    compatibilité PHP exacte du serveur cible n'était pas connue au moment du
    développement initial.
 
+   **Troisième confirmation, la plus grave, ayant conduit à un changement
+   d'architecture** : après correction du bug PHP 7.4 ci-dessus, l'accès à la
+   page de configuration continuait à échouer avec le même message
+   « Le contrôleur ... est manquant ou non valable. », de façon strictement
+   reproductible à 100 % (à chaque tentative, tous les jours). Les hypothèses
+   suivantes ont été testées puis **toutes écartées** avec le gestionnaire :
+   - cache applicatif PrestaShop (`var/cache/{prod,dev}`) — vidé plusieurs
+     fois, aucun effet ;
+   - cache de classes PrestaShop (`class_index.php`) — supprimé, aucun effet ;
+   - permissions ACL (`ps_tab` / `ps_authorization_role` / `ps_access`) —
+     vérifiées en base, présentes et correctement liées au profil ;
+   - OPcache serveur figé sur un ancien fichier — écarté en testant un
+     **deuxième module de diagnostic** (`oklatest`, contrôleur minimal sans
+     aucune dépendance) puis un **troisième**, sous un nom de fichier jamais
+     vu du serveur (`oklaschenkerv2`) : échec strictement identique dans les
+     deux cas ;
+   - incident ponctuel de quota base de données OVH (`max_questions` /
+     `max_user_connections`) — écarté par le gestionnaire lui-même, qui a fait
+     remarquer à juste titre que l'échec est reproductible à 100 % sur
+     plusieurs jours alors que les dépassements de quota observés dans les
+     journaux sont ponctuels (quelques secondes toutes les 30–45 minutes) ;
+     statistiquement incompatible avec un échec systématique.
+
+   **Conclusion retenue** : cette installation PrestaShop spécifique ne
+   parvient pas à résoudre/charger un `Tab` + `AdminController` fourni par un
+   module tiers, quelle que soit sa simplicité, alors qu'un module tiers déjà
+   installé sur ce même site (Smartsupp) fonctionne normalement en utilisant
+   **`getContent()`** (formulaire de configuration affiché directement dans
+   la liste des modules, via le bouton « Configurer », sans contrôleur
+   dédié). Le gestionnaire a lui-même suggéré cette piste après plusieurs
+   jours d'échecs identiques (« peut être que la solution est juste que le
+   module ne s'affiche pas sur le coté mais d'une façon différente »). Le
+   module a donc été refondu : toute la logique métier déjà écrite et testée
+   (moteur tarifaire, import, détection des anciens transporteurs, journaux,
+   zone dangereuse) est conservée à l'identique, mais son point d'entrée
+   back-office est désormais `oklaschenker::getContent()` et non plus un
+   `Tab`/`AdminController` séparé. `install()`/`uninstall()` ne créent plus
+   aucun `Tab`. Voir l'en-tête de `oklaschenker.php` et `ANALYSE_TECHNIQUE.md`
+   §4 pour le détail.
+
+   Cette bascule d'architecture n'a, comme les points précédents, pu être
+   décidée qu'à partir des retours d'installation réels — elle n'était pas
+   anticipable au moment du développement initial hors ligne.
+
 2. **Deux fichiers de la mission initiale jamais fournis** :
    `OKLA-Schenker-tariff-spec-v1.xlsx` et `.json`. Remplacés par
    `schenker_tarifs_extraits.{json,csv}`, qui portent eux-mêmes la mention

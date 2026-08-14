@@ -2,7 +2,7 @@
 
 ## 1. Accès à la page de configuration
 
-Back-office > **Expédition** > **Schenker - OK-LA**.
+Back-office > **Modules** > rechercher « Schenker - OK-LA » > bouton **Configurer**.
 
 ## 2. Importer la grille tarifaire
 

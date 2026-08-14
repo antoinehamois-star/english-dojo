@@ -10,6 +10,7 @@
     </div>
 
     <form method="post" action="{$okla_config_form_action}">
+        <input type="hidden" name="submitOklaSchenkerModule" value="1" />
         <input type="hidden" name="oklaSchenkerSaveConfig" value="1" />
 
         <h4>{l s='Transporteur' mod='oklaschenker'}</h4>
@@ -99,6 +100,7 @@
     </form>
 
     <form method="post" action="{$okla_config_form_action}" style="display:inline-block;margin-top:10px;">
+        <input type="hidden" name="submitOklaSchenkerModule" value="1" />
         <input type="hidden" name="oklaSchenkerActivateCarrier" value="{if $okla_config.carrier_active}0{else}1{/if}" />
         <button type="submit" class="btn {if $okla_config.carrier_active}btn-warning{else}btn-success{/if}">
             {if $okla_config.carrier_active}
@@ -133,6 +135,7 @@
                 <br />
                 {l s='Cet import REMPLACE intégralement les données tarifaires actuelles. Confirmez pour continuer.' mod='oklaschenker'}
                 <form method="post" action="{$okla_config_form_action}" style="margin-top:10px;">
+                    <input type="hidden" name="submitOklaSchenkerModule" value="1" />
                     <input type="hidden" name="oklaSchenkerConfirmImport" value="1" />
                     <button type="submit" class="btn btn-danger">{l s='Confirmer l\'import' mod='oklaschenker'}</button>
                 </form>
@@ -184,6 +187,7 @@
     <div class="panel-heading"><i class="icon-warning-sign"></i> {l s='Anciens transporteurs évoquant Schenker (lecture seule)' mod='oklaschenker'}</div>
     <div class="alert alert-info">{l s='Ces transporteurs ne sont JAMAIS modifiés ni supprimés automatiquement par le module.' mod='oklaschenker'}</div>
     <form method="post" action="{$okla_config_form_action}">
+        <input type="hidden" name="submitOklaSchenkerModule" value="1" />
         <input type="hidden" name="oklaSchenkerRefreshLegacyReport" value="1" />
         <button type="submit" class="btn btn-default">{l s='Rafraîchir la détection' mod='oklaschenker'}</button>
     </form>
@@ -209,6 +213,7 @@
                     <td>
                         {if $legacy.active}
                         <form method="post" action="{$okla_config_form_action}" onsubmit="return confirm('{l s='Confirmer la désactivation de ce transporteur existant ? Il ne sera jamais supprimé.' mod='oklaschenker'}');">
+                            <input type="hidden" name="submitOklaSchenkerModule" value="1" />
                             <input type="hidden" name="oklaSchenkerDisableLegacyCarrier" value="{$legacy.id_carrier}" />
                             <input type="hidden" name="oklaSchenkerConfirmDisableLegacy" value="1" />
                             <button type="submit" class="btn btn-xs btn-warning">{l s='Désactiver' mod='oklaschenker'}</button>
@@ -253,6 +258,7 @@
     <div class="panel-heading text-danger"><i class="icon-trash"></i> {l s='Zone dangereuse' mod='oklaschenker'}</div>
     <p>{l s='Supprime définitivement toutes les tables et données du module (tarifs, journaux, rapports). Le transporteur créé et son historique de commandes ne sont pas affectés.' mod='oklaschenker'}</p>
     <form method="post" action="{$okla_config_form_action}" onsubmit="return confirm('{l s='Cette action est irréversible. Continuer ?' mod='oklaschenker'}');">
+        <input type="hidden" name="submitOklaSchenkerModule" value="1" />
         <input type="hidden" name="oklaSchenkerPurgeData" value="1" />
         <div class="form-group">
             <label>{l s='Tapez SUPPRIMER pour confirmer' mod='oklaschenker'}</label>

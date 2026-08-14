@@ -5,7 +5,7 @@
  * Utilisée par :
  *  - les tests PHP CLI (chargement direct de data/schenker_tarifs_extraits.json) ;
  *  - l'aperçu de contrôle avant import en base dans le back-office
- *    (AdminOklaSchenkerController::renderImportPreview).
+ *    (oklaschenker::getContent()::renderImportPreview).
  *
  * Ne dépend d'aucune classe PrestaShop.
  */

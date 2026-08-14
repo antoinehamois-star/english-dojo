@@ -7,17 +7,28 @@ aucune étiquette réelle.** Voir `docs/ANALYSE_TECHNIQUE.md` pour le détail co
 ## ⚠️ Statut de vérification — à lire avant toute mise en production
 
 Ce module a été écrit conformément à l'API documentée de PrestaShop 1.7
-(`Module`, `CarrierModule`, `Carrier`, `ObjectModel`, `AdminController`, `Db`),
-**mais n'a pas pu être installé ni exécuté dans un vrai PrestaShop** pendant ce
-développement : aucun dépôt contenant le cœur PrestaShop/le site OK-LA n'était
-accessible depuis l'environnement de développement. Seul le moteur de calcul
+(`Module`, `CarrierModule`, `Carrier`, `ObjectModel`, `Db`). Le moteur de calcul
 tarifaire pur PHP (`classes/OklaSchenkerRateCalculator.php`) a été réellement
 testé et exécuté (25 tests, voir `docs/RAPPORT_TESTS.md`).
+
+Le module a ensuite été **réellement installé et testé sur le site OK-LA en
+production** par le gestionnaire. Cela a permis de corriger deux bugs concrets
+(propriété `Carrier->delay` vide, incompatibilité de syntaxe PHP 7.4+), puis de
+constater qu'une page de configuration exposée via un `Tab`/`AdminController`
+dédié — pourtant l'architecture standard PrestaShop — ne se chargeait jamais
+sur ce site précis (« Le contrôleur ... est manquant ou non valable. »,
+reproductible à 100 %, sur trois modules de test indépendants). **La
+configuration a donc été refondue pour utiliser `getContent()`** (formulaire
+affiché directement dans la liste des modules via le bouton « Configurer »),
+mécanisme confirmé fonctionnel sur ce site via un autre module déjà installé.
+Voir `docs/RAPPORT_POINTS_BLOQUANTS.md` pour l'historique complet. **Cette
+nouvelle version n'a pas encore été retestée en conditions réelles** — c'est
+la prochaine étape.
 
 **Avant toute mise en production, un gestionnaire/développeur ayant accès au vrai
 site doit :**
 1. Installer le module sur un environnement de recette OK-LA (pas en production).
-2. Vérifier l'écran de configuration (`Expédition > Schenker - OK-LA`).
+2. Vérifier l'écran de configuration (Modules > Schenker - OK-LA > bouton « Configurer »).
 3. Contrôler puis importer la grille tarifaire (bouton dédié).
 4. Vérifier le rapport des anciens transporteurs « AD SCHENKER » qui s'affiche
    à l'installation, et ne rien désactiver sans être certain que ce n'est pas
@@ -38,7 +49,7 @@ site doit :**
    - détecte (sans les toucher) les transporteurs existants dont le nom contient
      « SCHENKER » (dont d'éventuels « AD SCHENKER ») et les liste en back-office ;
    - **ne modifie, ne supprime, ni ne désactive aucun transporteur existant.**
-4. Aller dans `Expédition > Schenker - OK-LA` pour configurer.
+4. Aller dans Modules > Schenker - OK-LA > bouton « Configurer » pour configurer (pas de menu latéral dédié — voir docs/RAPPORT_POINTS_BLOQUANTS.md).
 
 ## Désinstallation
 
