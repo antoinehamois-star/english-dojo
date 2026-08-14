@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>oklaschenkerv2</name>
+    <displayName><![CDATA[Schenker - OK-LA (calcul tarifaire)]]></displayName>
+    <version><![CDATA[1.0.0]]></version>
+    <description><![CDATA[Calcule automatiquement le tarif de livraison Schenker à partir de la grille tarifaire contractuelle OK-LA. Phase 1 : calcul local uniquement, sans réservation ni étiquette.]]></description>
+    <author><![CDATA[OK-LA]]></author>
+    <tab><![CDATA[shipping_logistics]]></tab>
+    <confirmUninstall><![CDATA[La désinstallation désactive uniquement le transporteur Schenker - OK-LA. Aucune commande, aucun ancien transporteur et aucune donnée tarifaire/journal ne sera supprimé.]]></confirmUninstall>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+    <limited_countries></limited_countries>
+</module>
