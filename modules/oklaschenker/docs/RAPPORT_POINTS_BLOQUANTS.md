@@ -88,6 +88,20 @@
    décidée qu'à partir des retours d'installation réels — elle n'était pas
    anticipable au moment du développement initial hors ligne.
 
+   **Quatrième confirmation** : une fois la page de configuration effectivement
+   accessible via `getContent()`, l'enregistrement du formulaire (groupe de
+   taxe + délai) provoquait une erreur 500 Symfony : « Attempted to call an
+   undefined method named "hasPermission" of class "Profile". ». Cause :
+   `canWrite()` appelait `Profile::hasPermission(...)`, une méthode qui
+   n'existe pas dans l'API PrestaShop réelle (confusion avec une API d'un
+   autre framework). Corrigé en utilisant `Tab::checkTabRights()`, la
+   méthode réellement utilisée par le cœur PrestaShop
+   (`AdminController::viewAccess()`) pour vérifier les droits de l'employé
+   connecté sur un onglet donné. Ce bug bloquait uniquement l'enregistrement
+   (POST), pas l'affichage de la page — d'où sa découverte seulement au
+   moment de cliquer sur « Enregistrer ». Comme les points précédents, ce
+   diagnostic n'était possible qu'avec un retour d'utilisation réel.
+
 2. **Deux fichiers de la mission initiale jamais fournis** :
    `OKLA-Schenker-tariff-spec-v1.xlsx` et `.json`. Remplacés par
    `schenker_tarifs_extraits.{json,csv}`, qui portent eux-mêmes la mention

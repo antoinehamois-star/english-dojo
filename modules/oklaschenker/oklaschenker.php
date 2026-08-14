@@ -464,13 +464,15 @@ class Oklaschenker extends CarrierModule
 
     private function canWrite(): bool
     {
-        $employee = $this->context->employee;
-        if ($employee === null) {
+        if ($this->context->employee === null) {
             return false;
         }
-        $idTabModules = (int) Tab::getIdFromClassName('AdminModules');
 
-        return (bool) Profile::hasPermission((int) $employee->id_profile, $idTabModules, 'edit');
+        // Profile::hasPermission() n'existe pas dans l'API PrestaShop (erreur constatée
+        // en production : "Attempted to call an undefined method named hasPermission").
+        // Tab::checkTabRights() est la méthode réellement utilisée par le cœur PrestaShop
+        // (AdminController::viewAccess()) pour vérifier les droits de l'employé connecté.
+        return (bool) Tab::checkTabRights((int) Tab::getIdFromClassName('AdminModules'));
     }
 
     private function collectConfigViewData(): array
@@ -769,9 +771,7 @@ class Oklaschenker extends CarrierModule
 
     private function processPurgeData(): string
     {
-        $employee = $this->context->employee;
-        $idTabModules = (int) Tab::getIdFromClassName('AdminModules');
-        if ($employee === null || !Profile::hasPermission((int) $employee->id_profile, $idTabModules, 'delete')) {
+        if (!$this->canWrite()) {
             return $this->displayError($this->l('Permission de suppression requise.'));
         }
 
