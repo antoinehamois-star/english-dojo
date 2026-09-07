@@ -34,7 +34,8 @@ Section « Transporteur » :
 Quatre suppléments au déclencheur non ambigu (cf.
 `docs/ANALYSE_TECHNIQUE.md` §2.1) peuvent être activés/désactivés
 individuellement :
-- `URBAN_ZONE` — zone urbaine (liste de départements fournie par Schenker).
+- `URBAN_ZONE` — zone urbaine (liste de départements initialement fournie par
+  Schenker, modifiable ensuite par le gestionnaire — voir section 4bis).
 - `SEASONAL` — ajustement saisonnier (1er juin → 31 août).
 - `SAFETY_QUALITY` — contribution sûreté et qualité.
 - `ENERGY_CONTRIBUTION` — contribution Transition Énergétique.
@@ -43,6 +44,16 @@ Tous les autres suppléments identifiés dans la grille (contre-remboursement,
 région parisienne, RDV, magasinage, etc.) sont stockés en base pour
 information mais **ne sont jamais appliqués automatiquement** : leur
 déclencheur ne peut pas être déduit de façon fiable du panier PrestaShop.
+
+## 4bis. Modifier la liste des départements en zone urbaine
+
+Section « Zone urbaine (supplément URBAN_ZONE) » : liste actuelle affichée
+sous forme d'étiquettes, chacune avec un bouton « × » pour la retirer
+(confirmation demandée). Pour ajouter un ou plusieurs départements, saisir
+leur(s) code(s) (ex. `77, 95`) dans le champ et cliquer sur « Ajouter ».
+Cette liste est une décision du gestionnaire, indépendante d'un nouvel
+import de la grille tarifaire (un import ne touche ni ne réinitialise cette
+liste — seuls les paliers de poids/prix sont remplacés).
 
 ## 5. Tester un tarif
 

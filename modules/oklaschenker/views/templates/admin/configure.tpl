@@ -125,6 +125,35 @@
 </div>
 
 <div class="panel">
+    <div class="panel-heading"><i class="icon-building"></i> {l s='Zone urbaine (supplément URBAN_ZONE)' mod='oklaschenker'}</div>
+    <p class="help-block">
+        {l s='Liste des départements considérés en zone urbaine, décision métier du gestionnaire (pas une donnée figée de la grille source).' mod='oklaschenker'}
+    </p>
+    <p>
+        {foreach from=$okla_urban_departments item=dept name=urbanList}
+            <span class="label label-info" style="margin-right:4px;">
+                {$dept}
+                <form method="post" action="{$okla_config_form_action}" style="display:inline;" onsubmit="return confirm('{l s='Retirer ce département de la zone urbaine ?' mod='oklaschenker'}');">
+                    <input type="hidden" name="submitOklaSchenkerModule" value="1" />
+                    <input type="hidden" name="oklaSchenkerRemoveUrbanDepartment" value="{$dept}" />
+                    <button type="submit" style="background:none;border:none;color:inherit;padding:0 0 0 4px;cursor:pointer;" title="{l s='Retirer' mod='oklaschenker'}">&times;</button>
+                </form>
+            </span>
+        {foreachelse}
+            <span class="text-muted">{l s='Aucun département en zone urbaine.' mod='oklaschenker'}</span>
+        {/foreach}
+    </p>
+    <form method="post" action="{$okla_config_form_action}" class="form-inline">
+        <input type="hidden" name="submitOklaSchenkerModule" value="1" />
+        <input type="hidden" name="oklaSchenkerAddUrbanDepartment" value="1" />
+        <div class="form-group">
+            <input type="text" class="form-control" name="urban_department_code" placeholder="{l s='ex : 77, 95' mod='oklaschenker'}" />
+        </div>
+        <button type="submit" class="btn btn-default">{l s='Ajouter' mod='oklaschenker'}</button>
+    </form>
+</div>
+
+<div class="panel">
     <div class="panel-heading"><i class="icon-upload"></i> {l s='Import de la grille tarifaire' mod='oklaschenker'}</div>
     <p>
         {l s='Données actuellement en base :' mod='oklaschenker'}

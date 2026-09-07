@@ -587,6 +587,10 @@ class Oklaschenker extends CarrierModule
                 $output .= $this->processDisableLegacyCarrier((int) Tools::getValue('oklaSchenkerDisableLegacyCarrier'));
             } elseif (Tools::isSubmit('oklaSchenkerExtendCarrierToRestrictedProducts')) {
                 $output .= $this->processExtendCarrierToRestrictedProducts();
+            } elseif (Tools::isSubmit('oklaSchenkerAddUrbanDepartment')) {
+                $output .= $this->processAddUrbanDepartment();
+            } elseif (Tools::isSubmit('oklaSchenkerRemoveUrbanDepartment')) {
+                $output .= $this->processRemoveUrbanDepartment((string) Tools::getValue('oklaSchenkerRemoveUrbanDepartment'));
             } elseif (Tools::isSubmit('oklaSchenkerPurgeData') && Tools::getValue('oklaSchenkerPurgeConfirmText') === 'SUPPRIMER') {
                 $output .= $this->processPurgeData();
             }
@@ -604,6 +608,7 @@ class Oklaschenker extends CarrierModule
             'okla_import_preview' => $importPreview,
             'okla_test_result' => $testResult,
             'okla_legacy_carriers' => $this->fetchLegacyCarrierReport(),
+            'okla_urban_departments' => $this->fetchUrbanDepartments(),
             'okla_recent_logs' => $this->fetchRecentLogs(),
             'okla_surcharge_codes' => OklaSchenkerRateCalculator::AUTO_SURCHARGE_CODES,
         ]);
@@ -672,6 +677,70 @@ class Oklaschenker extends CarrierModule
             'over100' => (int) Db::getInstance()->getValue('SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'oklaschenker_rate_over100`'),
             'urban' => (int) Db::getInstance()->getValue('SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'oklaschenker_urban_department`'),
         ];
+    }
+
+    /**
+     * @return string[] Codes départements actuellement en zone urbaine (supplément
+     *                   URBAN_ZONE), triés.
+     */
+    private function fetchUrbanDepartments(): array
+    {
+        $sql = new DbQuery();
+        $sql->select('department')
+            ->from('oklaschenker_urban_department')
+            ->orderBy('department ASC');
+
+        $rows = Db::getInstance()->executeS($sql);
+
+        return is_array($rows) ? array_column($rows, 'department') : [];
+    }
+
+    /**
+     * Ajoute un ou plusieurs départements à la zone urbaine (supplément URBAN_ZONE),
+     * décision métier du gestionnaire — pas une donnée de la grille source. Accepte
+     * une saisie séparée par virgules/espaces (ex. "77, 95"). Aucune validation
+     * d'existence réelle du département n'est faite au-delà du format (2 chiffres,
+     * ou 2A/2B pour la Corse) — le gestionnaire reste seul responsable du contenu.
+     */
+    private function processAddUrbanDepartment(): string
+    {
+        $raw = (string) Tools::getValue('urban_department_code', '');
+        $candidates = array_filter(array_map('trim', preg_split('/[,\s]+/', $raw)));
+
+        $added = [];
+        $invalid = [];
+        foreach ($candidates as $code) {
+            $codeUpper = strtoupper($code);
+            if (!preg_match('/^(\d{2}|2A|2B)$/', $codeUpper)) {
+                $invalid[] = $code;
+                continue;
+            }
+            Db::getInstance()->insert('oklaschenker_urban_department', ['department' => pSQL($codeUpper)], false, true, Db::INSERT_IGNORE);
+            $added[] = $codeUpper;
+        }
+
+        OklaSchenkerLogger::log(OklaSchenkerLogger::LEVEL_INFO, 'urban_zone', 'Départements ajoutés à la zone urbaine', ['added' => $added, 'invalid' => $invalid]);
+
+        if (empty($added) && !empty($invalid)) {
+            return $this->displayError(sprintf($this->l('Format invalide, aucun département ajouté : %s'), implode(', ', $invalid)));
+        }
+
+        $message = sprintf($this->l('Département(s) ajouté(s) à la zone urbaine : %s.'), implode(', ', $added));
+        if (!empty($invalid)) {
+            $message .= ' ' . sprintf($this->l('Ignoré(s) (format invalide) : %s.'), implode(', ', $invalid));
+        }
+
+        return $this->displayConfirmation($message);
+    }
+
+    private function processRemoveUrbanDepartment(string $department): string
+    {
+        $department = pSQL(strtoupper(trim($department)));
+        Db::getInstance()->delete('oklaschenker_urban_department', 'department = \'' . $department . '\'');
+
+        OklaSchenkerLogger::log(OklaSchenkerLogger::LEVEL_INFO, 'urban_zone', 'Département retiré de la zone urbaine', ['department' => $department]);
+
+        return $this->displayConfirmation(sprintf($this->l('Département %s retiré de la zone urbaine.'), $department));
     }
 
     private function processSaveConfig(): string
@@ -778,7 +847,12 @@ class Oklaschenker extends CarrierModule
 
         Db::getInstance()->execute('TRUNCATE TABLE `' . _DB_PREFIX_ . 'oklaschenker_rate_less100`');
         Db::getInstance()->execute('TRUNCATE TABLE `' . _DB_PREFIX_ . 'oklaschenker_rate_over100`');
-        Db::getInstance()->execute('TRUNCATE TABLE `' . _DB_PREFIX_ . 'oklaschenker_urban_department`');
+        // Pas de TRUNCATE ici volontairement : contrairement aux paliers de poids/prix
+        // (entièrement remplacés par le fichier source à chaque import), la liste des
+        // départements en zone urbaine peut être complétée manuellement par le
+        // gestionnaire (voir processAddUrbanDepartment()) — un réimport de la grille ne
+        // doit jamais effacer cette décision métier. Les départements du fichier source
+        // sont simplement fusionnés (INSERT IGNORE) avec ceux déjà en base.
 
         $less100Rows = [];
         foreach ($json['less_100kg_rates'] ?? [] as $row) {
