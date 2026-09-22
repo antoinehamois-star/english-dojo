@@ -18,6 +18,16 @@ class OklaSchenkerRateCalculator
     public const SURCHARGE_SEASONAL = 'SEASONAL';
     public const SURCHARGE_SAFETY_QUALITY = 'SAFETY_QUALITY';
     public const SURCHARGE_ENERGY_CONTRIBUTION = 'ENERGY_CONTRIBUTION';
+    /**
+     * Ajustement gazole — absent du fichier source initial (schenker_tarifs_extraits.json
+     * ne contenait aucune ligne "carburant"/"gazole", voir test 13 historique). Confirmé
+     * réel et communiqué directement par le gestionnaire le 22/09/2026 à 19,8 % du tarif
+     * de base, après comparaison de deux extraits de grille Schenker à jour (fichiers
+     * "-100kg" et "+100kg") montrant une ligne "ajustement gazole" non reprise jusque-là.
+     * Taux fixe déclaré par le gestionnaire, pas une valeur recalculée depuis les fichiers
+     * (les deux exemples fournis donnaient ~25,6 % et ~26,5 %, incohérents entre eux).
+     */
+    public const SURCHARGE_FUEL_ADJUSTMENT = 'FUEL_ADJUSTMENT';
 
     /** Suppléments applicables automatiquement (déclencheur non ambigu). */
     public const AUTO_SURCHARGE_CODES = [
@@ -25,6 +35,7 @@ class OklaSchenkerRateCalculator
         self::SURCHARGE_SEASONAL,
         self::SURCHARGE_SAFETY_QUALITY,
         self::SURCHARGE_ENERGY_CONTRIBUTION,
+        self::SURCHARGE_FUEL_ADJUSTMENT,
     ];
 
     public const REASON_INVALID_DEPARTMENT = 'INVALID_DEPARTMENT';
@@ -172,6 +183,18 @@ class OklaSchenkerRateCalculator
                 $definition = $this->repository->getSurchargeDefinition($code);
 
                 return $definition !== null ? round((float) $definition['amount'], 2) : null;
+
+            case self::SURCHARGE_FUEL_ADJUSTMENT:
+                // Pourcentage fixe du tarif de base, appliqué par expédition, sans
+                // restriction saisonnière (confirmé par le gestionnaire — voir la
+                // constante SURCHARGE_FUEL_ADJUSTMENT).
+                $definition = $this->repository->getSurchargeDefinition($code);
+                if ($definition === null) {
+                    return null;
+                }
+                $pct = (float) $definition['amount'];
+
+                return round($baseHt * $pct / 100.0, 2);
 
             default:
                 return null;

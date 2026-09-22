@@ -86,6 +86,7 @@ $findSurchargeAmount = static function (array $surcharges, string $needle): floa
 };
 $safetyAmount = $findSurchargeAmount($json['surcharges_raw'], 'Contribution sûreté et qualité');
 $energyAmount = $findSurchargeAmount($json['surcharges_raw'], 'Contribution Transition Energétique');
+$fuelPct = $findSurchargeAmount($json['surcharges_raw'], 'gazole');
 
 // ---------------------------------------------------------------------
 // 1. Département standard (01 - AIN), poids dans le premier palier < 100kg
@@ -109,12 +110,13 @@ foreach ($r['supplements'] as $s) {
     }
 }
 $t->assertTrue('2b. Supplément zone urbaine appliqué pour le département 06', $urbanSupplement !== null);
-// Hors saison : les 2 suppléments "toujours actifs" (sûreté+qualité, énergie) s'ajoutent
-// aussi par défaut, en plus du supplément zone urbaine testé ici.
+// Hors saison : les 3 suppléments "toujours actifs" (sûreté+qualité, énergie, gazole)
+// s'ajoutent aussi par défaut, en plus du supplément zone urbaine testé ici.
+$fuelAmount = round((float) $fixtureUrban['price_ht'] * $fuelPct / 100.0, 2);
 $t->assertSame(
-    round((float) $fixtureUrban['price_ht'] + $urbanSupplement['amount'] + $safetyAmount + $energyAmount, 2),
+    round((float) $fixtureUrban['price_ht'] + $urbanSupplement['amount'] + $safetyAmount + $energyAmount + $fuelAmount, 2),
     $r['total_price_ht'],
-    '2c. Total HT = base + supplément zone urbaine + sûreté/qualité + énergie (tous activés par défaut)'
+    '2c. Total HT = base + zone urbaine + sûreté/qualité + énergie + gazole (tous activés par défaut)'
 );
 
 // ---------------------------------------------------------------------
@@ -208,18 +210,28 @@ $t->assertTrue('12a. Supplément saisonnier appliqué le 15 juillet', $hasSeason
 $t->assertTrue('12b. Supplément saisonnier absent le 15 novembre', $hasSeasonalOut === false);
 
 // ---------------------------------------------------------------------
-// 13. Supplément carburant — ABSENT de la source sous ce libellé exact.
-//     Seule une "Contribution Transition Energétique" existe. On vérifie qu'aucun
-//     supplément nommé "carburant" n'est fabriqué / appliqué.
+// 13. Supplément carburant (ajustement gazole) — absent du fichier source initial
+//     (une "Contribution Transition Energétique" existait déjà, mais aucune ligne
+//     "gazole"/"carburant" distincte). Confirmé réel et communiqué par le gestionnaire
+//     le 22/09/2026 (19,8 % du tarif de base, après comparaison de deux extraits de
+//     grille Schenker à jour) — ajouté depuis à AUTO_SURCHARGE_CODES. On vérifie ici
+//     qu'il est bien appliqué, au bon taux, sur le tarif de base HT (pas sur le total
+//     après autres suppléments).
 // ---------------------------------------------------------------------
-$r = $calc->calculate('01', 5.0);
-$hasFuelLabel = false;
+$fixture01 = $findRate($json['less_100kg_rates'], '01', 1.0);
+$r = $calc->calculate('01', 5.0, new DateTimeImmutable('2026-11-15')); // hors saison, isole le supplément gazole
+$fuelSupplement = null;
 foreach ($r['supplements'] as $s) {
-    if (stripos($s['code'], 'FUEL') !== false || stripos($s['code'], 'CARBURANT') !== false) {
-        $hasFuelLabel = true;
+    if ($s['code'] === OklaSchenkerRateCalculator::SURCHARGE_FUEL_ADJUSTMENT) {
+        $fuelSupplement = $s;
     }
 }
-$t->assertTrue('13. Aucun supplément "carburant" inventé (absent de la source, non implémenté)', $hasFuelLabel === false);
+$t->assertTrue('13a. Supplément ajustement gazole (19,8%) appliqué', $fuelSupplement !== null);
+$t->assertSame(
+    round((float) $fixture01['price_ht'] * $fuelPct / 100.0, 2),
+    $fuelSupplement['amount'] ?? null,
+    '13b. Montant gazole = 19,8% du tarif de base HT (taux confirmé par le gestionnaire, pas recalculé depuis un exemple de fichier)'
+);
 
 // ---------------------------------------------------------------------
 // 14. Panier multicolis — l'agrégation de poids multi-colis est de la responsabilité

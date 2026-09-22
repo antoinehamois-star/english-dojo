@@ -31,7 +31,7 @@ Section « Transporteur » :
 
 ## 4. Suppléments appliqués automatiquement
 
-Quatre suppléments au déclencheur non ambigu (cf.
+Cinq suppléments au déclencheur non ambigu (cf.
 `docs/ANALYSE_TECHNIQUE.md` §2.1) peuvent être activés/désactivés
 individuellement :
 - `URBAN_ZONE` — zone urbaine (liste de départements initialement fournie par
@@ -39,6 +39,9 @@ individuellement :
 - `SEASONAL` — ajustement saisonnier (1er juin → 31 août).
 - `SAFETY_QUALITY` — contribution sûreté et qualité.
 - `ENERGY_CONTRIBUTION` — contribution Transition Énergétique.
+- `FUEL_ADJUSTMENT` — ajustement gazole, 19,8 % du tarif de base HT, ajouté le
+  22/09/2026 (taux communiqué directement par le gestionnaire — absent du
+  fichier source initial, voir `docs/RAPPORT_POINTS_BLOQUANTS.md`).
 
 Tous les autres suppléments identifiés dans la grille (contre-remboursement,
 région parisienne, RDV, magasinage, etc.) sont stockés en base pour

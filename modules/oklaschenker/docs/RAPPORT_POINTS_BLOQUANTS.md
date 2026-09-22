@@ -178,10 +178,25 @@
    donnée absente). Seul le plafond réel de la grille de prix (999 kg) reste
    appliqué au calcul lui-même.
 
-5. **Aucun supplément « carburant » distinct** n'existe dans la source ; seule
-   une « Contribution Transition Énergétique » est présente et implémentée à
-   sa place. À clarifier avec Schenker si un supplément carburant séparé
-   existe réellement dans le contrat.
+5. ~~**Aucun supplément « carburant » distinct** n'existe dans la source~~ —
+   **résolu le 22/09/2026.** Un écart de prix constaté en production
+   (28,31 € affiché pour le département 91/23 kg, ne correspondant pas au
+   tarif réel attendu par le gestionnaire) a été investigué en comparant deux
+   extraits à jour de la grille Schenker fournis par le gestionnaire
+   (`-100kg.xlsx`, `+100kg.xlsx`). Ces fichiers font apparaître une ligne
+   **« ajustement gazole »** totalement absente du fichier source initial
+   (`schenker_tarifs_extraits.json`) et donc jamais appliquée. Les deux
+   exemples chiffrés des fichiers donnaient des taux incohérents entre eux
+   (~25,6 % et ~26,5 % du tarif de base) — plutôt que de recalculer un taux
+   à partir de ces exemples, le taux exact a été demandé et confirmé
+   directement par le gestionnaire : **19,8 % du tarif de base HT, par
+   expédition, sans restriction saisonnière**. Implémenté comme cinquième
+   supplément automatique (`FUEL_ADJUSTMENT`), avec réamorçage automatique de
+   sa définition en base à l'ouverture de l'écran Configurer (pas besoin de
+   réinstaller le module pour les sites déjà en production). Voir
+   `classes/OklaSchenkerRateCalculator.php` (constante
+   `SURCHARGE_FUEL_ADJUSTMENT`) et le test 13 mis à jour dans
+   `tests/RateCalculatorTest.php`.
 
 ## Hors périmètre — assumé, pas un manque
 

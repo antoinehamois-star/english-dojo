@@ -90,6 +90,7 @@ class OklaSchenkerArrayTariffRepository implements OklaSchenkerTariffRepositoryI
             OklaSchenkerRateCalculator::SURCHARGE_SEASONAL => 'Ajustement saisonnier',
             OklaSchenkerRateCalculator::SURCHARGE_SAFETY_QUALITY => 'Contribution sûreté et qualité',
             OklaSchenkerRateCalculator::SURCHARGE_ENERGY_CONTRIBUTION => 'Contribution Transition Energétique',
+            OklaSchenkerRateCalculator::SURCHARGE_FUEL_ADJUSTMENT => 'gazole',
         ];
 
         foreach ($data['surcharges_raw'] ?? [] as $row) {

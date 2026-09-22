@@ -237,6 +237,7 @@ class Oklaschenker extends CarrierModule
             OklaSchenkerRateCalculator::SURCHARGE_SEASONAL => 'Ajustement saisonnier',
             OklaSchenkerRateCalculator::SURCHARGE_SAFETY_QUALITY => 'Contribution sûreté et qualité',
             OklaSchenkerRateCalculator::SURCHARGE_ENERGY_CONTRIBUTION => 'Contribution Transition Energétique',
+            OklaSchenkerRateCalculator::SURCHARGE_FUEL_ADJUSTMENT => 'gazole',
         ];
 
         foreach ($json['surcharges_raw'] ?? [] as $row) {
@@ -571,6 +572,11 @@ class Oklaschenker extends CarrierModule
     public function getContent()
     {
         $output = '';
+
+        // Réamorce silencieusement les nouveaux suppléments (ex. FUEL_ADJUSTMENT ajouté
+        // le 22/09/2026) sur les sites déjà installés, sans exiger une réinstallation
+        // complète — INSERT_IGNORE ne touche jamais les lignes déjà en base.
+        $this->seedSurchargeCatalog();
 
         if (Tools::isSubmit('submitOklaSchenkerModule')) {
             if (!$this->canWrite()) {

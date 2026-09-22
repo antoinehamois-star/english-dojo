@@ -15378,6 +15378,13 @@
       "amount": 1.05,
       "extra_1": null,
       "extra_2": null
+    },
+    {
+      "label": "Ajustement gazole",
+      "application": "en % sur le tarif départ",
+      "amount": 19.8,
+      "extra_1": null,
+      "extra_2": null
     }
   ],
   "notes": [
