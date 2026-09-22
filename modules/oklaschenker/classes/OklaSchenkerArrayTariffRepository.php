@@ -20,6 +20,9 @@ class OklaSchenkerArrayTariffRepository implements OklaSchenkerTariffRepositoryI
     /** @var array<string, true> */
     private array $urbanDepartments = [];
 
+    /** @var array<string, true> */
+    private array $parisRegionDepartments = [];
+
     /** @var array<string, array{amount:float,extra_1:mixed,extra_2:mixed}> */
     private array $surchargeDefinitions = [];
 
@@ -84,6 +87,10 @@ class OklaSchenkerArrayTariffRepository implements OklaSchenkerTariffRepositoryI
             $repo->urbanDepartments[strtoupper((string) $dept)] = true;
         }
 
+        foreach ($data['paris_region_departments'] ?? [] as $dept) {
+            $repo->parisRegionDepartments[strtoupper((string) $dept)] = true;
+        }
+
         // Cf. docs/ANALYSE_TECHNIQUE.md §2.1 pour la justification de cette classification.
         $labelMap = [
             OklaSchenkerRateCalculator::SURCHARGE_URBAN_ZONE => 'Livraison pour les expéditions à destination des zones urbaines',
@@ -91,6 +98,7 @@ class OklaSchenkerArrayTariffRepository implements OklaSchenkerTariffRepositoryI
             OklaSchenkerRateCalculator::SURCHARGE_SAFETY_QUALITY => 'Contribution sûreté et qualité',
             OklaSchenkerRateCalculator::SURCHARGE_ENERGY_CONTRIBUTION => 'Contribution Transition Energétique',
             OklaSchenkerRateCalculator::SURCHARGE_FUEL_ADJUSTMENT => 'gazole',
+            OklaSchenkerRateCalculator::SURCHARGE_PARIS_REGION => 'Région Parisienne',
         ];
 
         foreach ($data['surcharges_raw'] ?? [] as $row) {
@@ -137,6 +145,11 @@ class OklaSchenkerArrayTariffRepository implements OklaSchenkerTariffRepositoryI
     public function isUrbanDepartment(string $department): bool
     {
         return isset($this->urbanDepartments[strtoupper($department)]);
+    }
+
+    public function isParisRegionDepartment(string $department): bool
+    {
+        return isset($this->parisRegionDepartments[strtoupper($department)]);
     }
 
     public function getSurchargeDefinition(string $code): ?array

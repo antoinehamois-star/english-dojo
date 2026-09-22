@@ -33,6 +33,11 @@ return [
         PRIMARY KEY (`department`)
     ) ENGINE=' . $engine . ' DEFAULT CHARSET=utf8mb4;',
 
+    'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'oklaschenker_paris_region_department` (
+        `department` VARCHAR(4) NOT NULL,
+        PRIMARY KEY (`department`)
+    ) ENGINE=' . $engine . ' DEFAULT CHARSET=utf8mb4;',
+
     'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'oklaschenker_surcharge` (
         `code` VARCHAR(64) NOT NULL,
         `label` VARCHAR(255) NOT NULL,

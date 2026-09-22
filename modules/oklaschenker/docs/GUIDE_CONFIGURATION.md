@@ -31,7 +31,7 @@ Section « Transporteur » :
 
 ## 4. Suppléments appliqués automatiquement
 
-Cinq suppléments au déclencheur non ambigu (cf.
+Six suppléments au déclencheur non ambigu (cf.
 `docs/ANALYSE_TECHNIQUE.md` §2.1) peuvent être activés/désactivés
 individuellement :
 - `URBAN_ZONE` — zone urbaine (liste de départements initialement fournie par
@@ -42,11 +42,15 @@ individuellement :
 - `FUEL_ADJUSTMENT` — ajustement gazole, 19,8 % du tarif de base HT, ajouté le
   22/09/2026 (taux communiqué directement par le gestionnaire — absent du
   fichier source initial, voir `docs/RAPPORT_POINTS_BLOQUANTS.md`).
+- `PARIS_REGION` — Région Parisienne, 6,36 € forfait par expédition, ajouté le
+  22/09/2026, liste de départements **distincte** de la zone urbaine (75, 76,
+  77, 78, 91, 92, 93, 94, 95 — voir section 4ter). Les deux suppléments se
+  cumulent si un département figure dans les deux listes.
 
 Tous les autres suppléments identifiés dans la grille (contre-remboursement,
-région parisienne, RDV, magasinage, etc.) sont stockés en base pour
-information mais **ne sont jamais appliqués automatiquement** : leur
-déclencheur ne peut pas être déduit de façon fiable du panier PrestaShop.
+RDV, magasinage, etc.) sont stockés en base pour information mais **ne sont
+jamais appliqués automatiquement** : leur déclencheur ne peut pas être déduit
+de façon fiable du panier PrestaShop.
 
 ## 4bis. Modifier la liste des départements en zone urbaine
 
@@ -57,6 +61,12 @@ leur(s) code(s) (ex. `77, 95`) dans le champ et cliquer sur « Ajouter ».
 Cette liste est une décision du gestionnaire, indépendante d'un nouvel
 import de la grille tarifaire (un import ne touche ni ne réinitialise cette
 liste — seuls les paliers de poids/prix sont remplacés).
+
+## 4ter. Modifier la liste des départements en Région Parisienne
+
+Même mécanique que la section 4bis, dans le bloc « Région Parisienne
+(supplément PARIS_REGION) » juste en dessous — liste indépendante de la zone
+urbaine, avec ses propres boutons ajouter/retirer.
 
 ## 5. Tester un tarif
 

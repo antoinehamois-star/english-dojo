@@ -59,6 +59,16 @@ class OklaSchenkerDbTariffRepository implements OklaSchenkerTariffRepositoryInte
         return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 
+    public function isParisRegionDepartment(string $department): bool
+    {
+        $sql = new DbQuery();
+        $sql->select('1')
+            ->from('oklaschenker_paris_region_department')
+            ->where('department = \'' . pSQL($department) . '\'');
+
+        return (bool) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+    }
+
     public function getSurchargeDefinition(string $code): ?array
     {
         $sql = new DbQuery();

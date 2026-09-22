@@ -87,6 +87,7 @@ $findSurchargeAmount = static function (array $surcharges, string $needle): floa
 $safetyAmount = $findSurchargeAmount($json['surcharges_raw'], 'Contribution sûreté et qualité');
 $energyAmount = $findSurchargeAmount($json['surcharges_raw'], 'Contribution Transition Energétique');
 $fuelPct = $findSurchargeAmount($json['surcharges_raw'], 'gazole');
+$parisRegionAmount = $findSurchargeAmount($json['surcharges_raw'], 'Région Parisienne');
 
 // ---------------------------------------------------------------------
 // 1. Département standard (01 - AIN), poids dans le premier palier < 100kg
@@ -232,6 +233,32 @@ $t->assertSame(
     $fuelSupplement['amount'] ?? null,
     '13b. Montant gazole = 19,8% du tarif de base HT (taux confirmé par le gestionnaire, pas recalculé depuis un exemple de fichier)'
 );
+
+// ---------------------------------------------------------------------
+// 13c/13d. Supplément Région Parisienne — DISTINCT de la zone urbaine (liste de
+//     départements propre : 75, 76, 77, 78, 91, 92, 93, 94, 95, confirmée par le
+//     gestionnaire le 22/09/2026, cause du cas réel Wissous/91320). On vérifie qu'il
+//     s'applique pour un département de la liste (91) et pas pour un département hors
+//     liste (01, déjà utilisé dans les autres tests).
+// ---------------------------------------------------------------------
+$rParis = $calc->calculate('91', 23.0, new DateTimeImmutable('2026-11-15'));
+$parisSupplement = null;
+foreach ($rParis['supplements'] as $s) {
+    if ($s['code'] === OklaSchenkerRateCalculator::SURCHARGE_PARIS_REGION) {
+        $parisSupplement = $s;
+    }
+}
+$t->assertTrue('13c. Supplément Région Parisienne appliqué pour le département 91', $parisSupplement !== null);
+$t->assertSame(round($parisRegionAmount, 2), $parisSupplement['amount'] ?? null, '13d. Montant Région Parisienne = forfait fixe (6,36 €, confirmé par le gestionnaire)');
+
+$rNoParis = $calc->calculate('01', 5.0, new DateTimeImmutable('2026-11-15'));
+$hasParisOutsideList = false;
+foreach ($rNoParis['supplements'] as $s) {
+    if ($s['code'] === OklaSchenkerRateCalculator::SURCHARGE_PARIS_REGION) {
+        $hasParisOutsideList = true;
+    }
+}
+$t->assertTrue('13e. Supplément Région Parisienne absent pour un département hors liste (01)', $hasParisOutsideList === false);
 
 // ---------------------------------------------------------------------
 // 14. Panier multicolis — l'agrégation de poids multi-colis est de la responsabilité

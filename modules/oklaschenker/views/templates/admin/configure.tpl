@@ -154,6 +154,35 @@
 </div>
 
 <div class="panel">
+    <div class="panel-heading"><i class="icon-building"></i> {l s='Région Parisienne (supplément PARIS_REGION)' mod='oklaschenker'}</div>
+    <p class="help-block">
+        {l s='Liste distincte de la zone urbaine ci-dessus — supplément Schenker séparé, cumulable si un département figure dans les deux listes.' mod='oklaschenker'}
+    </p>
+    <p>
+        {foreach from=$okla_paris_region_departments item=dept name=parisRegionList}
+            <span class="label label-info" style="margin-right:4px;">
+                {$dept}
+                <form method="post" action="{$okla_config_form_action}" style="display:inline;" onsubmit="return confirm('{l s='Retirer ce département de la Région Parisienne ?' mod='oklaschenker'}');">
+                    <input type="hidden" name="submitOklaSchenkerModule" value="1" />
+                    <input type="hidden" name="oklaSchenkerRemoveParisRegionDepartment" value="{$dept}" />
+                    <button type="submit" style="background:none;border:none;color:inherit;padding:0 0 0 4px;cursor:pointer;" title="{l s='Retirer' mod='oklaschenker'}">&times;</button>
+                </form>
+            </span>
+        {foreachelse}
+            <span class="text-muted">{l s='Aucun département en Région Parisienne.' mod='oklaschenker'}</span>
+        {/foreach}
+    </p>
+    <form method="post" action="{$okla_config_form_action}" class="form-inline">
+        <input type="hidden" name="submitOklaSchenkerModule" value="1" />
+        <input type="hidden" name="oklaSchenkerAddParisRegionDepartment" value="1" />
+        <div class="form-group">
+            <input type="text" class="form-control" name="paris_region_department_code" placeholder="{l s='ex : 75, 92' mod='oklaschenker'}" />
+        </div>
+        <button type="submit" class="btn btn-default">{l s='Ajouter' mod='oklaschenker'}</button>
+    </form>
+</div>
+
+<div class="panel">
     <div class="panel-heading"><i class="icon-upload"></i> {l s='Import de la grille tarifaire' mod='oklaschenker'}</div>
     <p>
         {l s='Données actuellement en base :' mod='oklaschenker'}

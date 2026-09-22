@@ -15277,7 +15277,7 @@
     {
       "label": "Livraison pour les expéditions à destination des départements de la Région Parisienne",
       "application": "par expédition",
-      "amount": 3.36,
+      "amount": 6.36,
       "extra_1": null,
       "extra_2": null
     },
@@ -15391,5 +15391,16 @@
     "Tarifs HT extraits des onglets Schenker.",
     "Pour les colis de plus de 100 kg, appliquer poids/100 x prix_aux_100kg_ht.",
     "Validation humaine requise avant utilisation en production."
+  ],
+  "paris_region_departments": [
+    "75",
+    "76",
+    "77",
+    "78",
+    "91",
+    "92",
+    "93",
+    "94",
+    "95"
   ]
 }

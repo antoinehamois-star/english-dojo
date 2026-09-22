@@ -238,6 +238,7 @@ class Oklaschenker extends CarrierModule
             OklaSchenkerRateCalculator::SURCHARGE_SAFETY_QUALITY => 'Contribution sûreté et qualité',
             OklaSchenkerRateCalculator::SURCHARGE_ENERGY_CONTRIBUTION => 'Contribution Transition Energétique',
             OklaSchenkerRateCalculator::SURCHARGE_FUEL_ADJUSTMENT => 'gazole',
+            OklaSchenkerRateCalculator::SURCHARGE_PARIS_REGION => 'Région Parisienne',
         ];
 
         foreach ($json['surcharges_raw'] ?? [] as $row) {
@@ -573,10 +574,13 @@ class Oklaschenker extends CarrierModule
     {
         $output = '';
 
-        // Réamorce silencieusement les nouveaux suppléments (ex. FUEL_ADJUSTMENT ajouté
-        // le 22/09/2026) sur les sites déjà installés, sans exiger une réinstallation
-        // complète — INSERT_IGNORE ne touche jamais les lignes déjà en base.
+        // Réamorce silencieusement les nouveaux suppléments (ex. FUEL_ADJUSTMENT et
+        // PARIS_REGION ajoutés le 22/09/2026) sur les sites déjà installés, sans exiger
+        // une réinstallation complète — CREATE TABLE IF NOT EXISTS et INSERT IGNORE ne
+        // touchent jamais les tables/lignes déjà en place.
+        $this->createModuleTables();
         $this->seedSurchargeCatalog();
+        $this->seedParisRegionDepartments();
 
         if (Tools::isSubmit('submitOklaSchenkerModule')) {
             if (!$this->canWrite()) {
@@ -597,6 +601,10 @@ class Oklaschenker extends CarrierModule
                 $output .= $this->processAddUrbanDepartment();
             } elseif (Tools::isSubmit('oklaSchenkerRemoveUrbanDepartment')) {
                 $output .= $this->processRemoveUrbanDepartment((string) Tools::getValue('oklaSchenkerRemoveUrbanDepartment'));
+            } elseif (Tools::isSubmit('oklaSchenkerAddParisRegionDepartment')) {
+                $output .= $this->processAddParisRegionDepartment();
+            } elseif (Tools::isSubmit('oklaSchenkerRemoveParisRegionDepartment')) {
+                $output .= $this->processRemoveParisRegionDepartment((string) Tools::getValue('oklaSchenkerRemoveParisRegionDepartment'));
             } elseif (Tools::isSubmit('oklaSchenkerPurgeData') && Tools::getValue('oklaSchenkerPurgeConfirmText') === 'SUPPRIMER') {
                 $output .= $this->processPurgeData();
             }
@@ -615,6 +623,7 @@ class Oklaschenker extends CarrierModule
             'okla_test_result' => $testResult,
             'okla_legacy_carriers' => $this->fetchLegacyCarrierReport(),
             'okla_urban_departments' => $this->fetchUrbanDepartments(),
+            'okla_paris_region_departments' => $this->fetchParisRegionDepartments(),
             'okla_recent_logs' => $this->fetchRecentLogs(),
             'okla_surcharge_codes' => OklaSchenkerRateCalculator::AUTO_SURCHARGE_CODES,
         ]);
@@ -747,6 +756,85 @@ class Oklaschenker extends CarrierModule
         OklaSchenkerLogger::log(OklaSchenkerLogger::LEVEL_INFO, 'urban_zone', 'Département retiré de la zone urbaine', ['department' => $department]);
 
         return $this->displayConfirmation(sprintf($this->l('Département %s retiré de la zone urbaine.'), $department));
+    }
+
+    /**
+     * Liste distincte de la zone urbaine — supplément PARIS_REGION, confirmé par le
+     * gestionnaire le 22/09/2026 (6,36 € par expédition, départements 75, 76, 77, 78,
+     * 91, 92, 93, 94, 95). Mêmes règles que fetchUrbanDepartments().
+     */
+    private function fetchParisRegionDepartments(): array
+    {
+        $sql = new DbQuery();
+        $sql->select('department')
+            ->from('oklaschenker_paris_region_department')
+            ->orderBy('department ASC');
+
+        $rows = Db::getInstance()->executeS($sql);
+
+        return is_array($rows) ? array_column($rows, 'department') : [];
+    }
+
+    private function processAddParisRegionDepartment(): string
+    {
+        $raw = (string) Tools::getValue('paris_region_department_code', '');
+        $candidates = array_filter(array_map('trim', preg_split('/[,\s]+/', $raw)));
+
+        $added = [];
+        $invalid = [];
+        foreach ($candidates as $code) {
+            $codeUpper = strtoupper($code);
+            if (!preg_match('/^(\d{2}|2A|2B)$/', $codeUpper)) {
+                $invalid[] = $code;
+                continue;
+            }
+            Db::getInstance()->insert('oklaschenker_paris_region_department', ['department' => pSQL($codeUpper)], false, true, Db::INSERT_IGNORE);
+            $added[] = $codeUpper;
+        }
+
+        OklaSchenkerLogger::log(OklaSchenkerLogger::LEVEL_INFO, 'paris_region', 'Départements ajoutés à la Région Parisienne', ['added' => $added, 'invalid' => $invalid]);
+
+        if (empty($added) && !empty($invalid)) {
+            return $this->displayError(sprintf($this->l('Format invalide, aucun département ajouté : %s'), implode(', ', $invalid)));
+        }
+
+        $message = sprintf($this->l('Département(s) ajouté(s) à la Région Parisienne : %s.'), implode(', ', $added));
+        if (!empty($invalid)) {
+            $message .= ' ' . sprintf($this->l('Ignoré(s) (format invalide) : %s.'), implode(', ', $invalid));
+        }
+
+        return $this->displayConfirmation($message);
+    }
+
+    private function processRemoveParisRegionDepartment(string $department): string
+    {
+        $department = pSQL(strtoupper(trim($department)));
+        Db::getInstance()->delete('oklaschenker_paris_region_department', 'department = \'' . $department . '\'');
+
+        OklaSchenkerLogger::log(OklaSchenkerLogger::LEVEL_INFO, 'paris_region', 'Département retiré de la Région Parisienne', ['department' => $department]);
+
+        return $this->displayConfirmation(sprintf($this->l('Département %s retiré de la Région Parisienne.'), $department));
+    }
+
+    /**
+     * Réamorce (INSERT IGNORE, jamais destructeur) la liste des départements Région
+     * Parisienne depuis le fichier source, pour les sites déjà installés avant
+     * l'ajout de ce supplément (22/09/2026) — voir l'appel dans getContent().
+     */
+    private function seedParisRegionDepartments(): void
+    {
+        $dataFile = __DIR__ . '/data/schenker_tarifs_extraits.json';
+        if (!is_file($dataFile)) {
+            return;
+        }
+        $json = json_decode(file_get_contents($dataFile), true);
+        if (!is_array($json)) {
+            return;
+        }
+
+        foreach ($json['paris_region_departments'] ?? [] as $dept) {
+            Db::getInstance()->insert('oklaschenker_paris_region_department', ['department' => pSQL((string) $dept)], false, true, Db::INSERT_IGNORE);
+        }
     }
 
     private function processSaveConfig(): string
@@ -890,6 +978,16 @@ class Oklaschenker extends CarrierModule
         }
         if (!empty($urbanRows)) {
             Db::getInstance()->insert('oklaschenker_urban_department', $urbanRows, false, true, Db::INSERT_IGNORE);
+        }
+
+        // Même logique de fusion (jamais de TRUNCATE) que la zone urbaine ci-dessus —
+        // voir seedParisRegionDepartments() pour le réamorçage hors import.
+        $parisRegionRows = [];
+        foreach ($json['paris_region_departments'] ?? [] as $dept) {
+            $parisRegionRows[] = ['department' => pSQL((string) $dept)];
+        }
+        if (!empty($parisRegionRows)) {
+            Db::getInstance()->insert('oklaschenker_paris_region_department', $parisRegionRows, false, true, Db::INSERT_IGNORE);
         }
 
         Db::getInstance()->insert('oklaschenker_import_log', [

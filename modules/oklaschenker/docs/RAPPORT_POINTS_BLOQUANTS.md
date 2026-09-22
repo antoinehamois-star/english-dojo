@@ -154,10 +154,18 @@
    validation humaine reste à faire par un responsable OK-LA/Schenker avant
    d'utiliser les tarifs en clientèle réelle.
 
-3. **Liste des départements « Région parisienne » non fournie** par la
-   source : le supplément correspondant (3,36 €) est importé en base mais
-   **désactivé par défaut**, en attente d'une confirmation du périmètre
-   géographique exact par le gestionnaire.
+3. ~~**Liste des départements « Région parisienne » non fournie**~~ —
+   **résolu le 22/09/2026.** En reconstituant le cas Wissous/91320 avec le
+   gestionnaire (voir point 5 ci-dessous), le montant du supplément lui-même
+   s'est aussi révélé inexact : la source initiale indiquait 3,36 €, alors
+   que le gestionnaire confirme **6,36 €** par expédition. Le périmètre
+   géographique a également été confirmé : **75, 76, 77, 78, 91, 92, 93, 94,
+   95** — une liste volontairement différente de la zone urbaine (`URBAN_ZONE`,
+   supplément distinct, cumulable). Activé comme sixième supplément
+   automatique (`PARIS_REGION`), avec sa propre table de départements gérable
+   depuis l'écran Configurer (mêmes boutons ajouter/retirer que la zone
+   urbaine), et réamorçage automatique de la table et de la liste par défaut
+   sur les sites déjà installés (pas de réinstallation requise).
 
 4. **Aucune règle d'altitude, de gabarit ou de poids volumétrique n'est
    appliquée au tarif calculé.** Un tableau des contraintes de service DB

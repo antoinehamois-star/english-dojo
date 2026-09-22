@@ -21,6 +21,7 @@ return [
     'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'oklaschenker_rate_less100`;',
     'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'oklaschenker_rate_over100`;',
     'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'oklaschenker_urban_department`;',
+    'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'oklaschenker_paris_region_department`;',
     'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'oklaschenker_surcharge`;',
     'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'oklaschenker_calc_log`;',
     'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'oklaschenker_log`;',

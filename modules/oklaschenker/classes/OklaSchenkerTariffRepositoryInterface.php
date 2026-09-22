@@ -22,6 +22,13 @@ interface OklaSchenkerTariffRepositoryInterface
     public function isUrbanDepartment(string $department): bool;
 
     /**
+     * Liste distincte de la zone urbaine (URBAN_ZONE) : départements couverts par le
+     * supplément "Région Parisienne", confirmés par le gestionnaire le 22/09/2026
+     * (75, 76, 77, 78, 91, 92, 93, 94, 95).
+     */
+    public function isParisRegionDepartment(string $department): bool;
+
+    /**
      * @return array{amount:float,extra_1:mixed,extra_2:mixed}|null
      */
     public function getSurchargeDefinition(string $code): ?array;

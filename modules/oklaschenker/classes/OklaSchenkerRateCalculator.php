@@ -28,6 +28,13 @@ class OklaSchenkerRateCalculator
      * (les deux exemples fournis donnaient ~25,6 % et ~26,5 %, incohérents entre eux).
      */
     public const SURCHARGE_FUEL_ADJUSTMENT = 'FUEL_ADJUSTMENT';
+    /**
+     * Région Parisienne — supplément DISTINCT de la zone urbaine (URBAN_ZONE), avec sa
+     * propre liste de départements. Confirmé par le gestionnaire le 22/09/2026 :
+     * 6,36 € par expédition (et non 3,36 € comme indiqué dans le fichier source initial —
+     * valeur corrigée), départements 75, 76, 77, 78, 91, 92, 93, 94, 95.
+     */
+    public const SURCHARGE_PARIS_REGION = 'PARIS_REGION';
 
     /** Suppléments applicables automatiquement (déclencheur non ambigu). */
     public const AUTO_SURCHARGE_CODES = [
@@ -36,6 +43,7 @@ class OklaSchenkerRateCalculator
         self::SURCHARGE_SAFETY_QUALITY,
         self::SURCHARGE_ENERGY_CONTRIBUTION,
         self::SURCHARGE_FUEL_ADJUSTMENT,
+        self::SURCHARGE_PARIS_REGION,
     ];
 
     public const REASON_INVALID_DEPARTMENT = 'INVALID_DEPARTMENT';
@@ -180,6 +188,18 @@ class OklaSchenkerRateCalculator
 
             case self::SURCHARGE_SAFETY_QUALITY:
             case self::SURCHARGE_ENERGY_CONTRIBUTION:
+                $definition = $this->repository->getSurchargeDefinition($code);
+
+                return $definition !== null ? round((float) $definition['amount'], 2) : null;
+
+            case self::SURCHARGE_PARIS_REGION:
+                // Forfait fixe par expédition, liste de départements distincte de
+                // URBAN_ZONE (voir constante SURCHARGE_PARIS_REGION) — les deux peuvent
+                // se cumuler si un département figure dans les deux listes, aucune
+                // exclusion mutuelle n'a été demandée par le gestionnaire.
+                if (!$this->repository->isParisRegionDepartment($department)) {
+                    return null;
+                }
                 $definition = $this->repository->getSurchargeDefinition($code);
 
                 return $definition !== null ? round((float) $definition['amount'], 2) : null;
