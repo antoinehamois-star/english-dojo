@@ -112,8 +112,10 @@ foreach ($r['supplements'] as $s) {
 }
 $t->assertTrue('2b. Supplément zone urbaine appliqué pour le département 06', $urbanSupplement !== null);
 // Hors saison : les 3 suppléments "toujours actifs" (sûreté+qualité, énergie, gazole)
-// s'ajoutent aussi par défaut, en plus du supplément zone urbaine testé ici.
-$fuelAmount = round((float) $fixtureUrban['price_ht'] * $fuelPct / 100.0, 2);
+// s'ajoutent aussi par défaut, en plus du supplément zone urbaine testé ici. Le
+// département 06 n'est pas en Région Parisienne, donc la base du gazole ne comprend
+// ici que le tarif de base + la sûreté/qualité (voir formule confirmée le 23/09/2026).
+$fuelAmount = round(((float) $fixtureUrban['price_ht'] + $safetyAmount) * $fuelPct / 100.0, 2);
 $t->assertSame(
     round((float) $fixtureUrban['price_ht'] + $urbanSupplement['amount'] + $safetyAmount + $energyAmount + $fuelAmount, 2),
     $r['total_price_ht'],
@@ -214,10 +216,10 @@ $t->assertTrue('12b. Supplément saisonnier absent le 15 novembre', $hasSeasonal
 // 13. Supplément carburant (ajustement gazole) — absent du fichier source initial
 //     (une "Contribution Transition Energétique" existait déjà, mais aucune ligne
 //     "gazole"/"carburant" distincte). Confirmé réel et communiqué par le gestionnaire
-//     le 22/09/2026 (19,8 % du tarif de base, après comparaison de deux extraits de
-//     grille Schenker à jour) — ajouté depuis à AUTO_SURCHARGE_CODES. On vérifie ici
-//     qu'il est bien appliqué, au bon taux, sur le tarif de base HT (pas sur le total
-//     après autres suppléments).
+//     le 22/09/2026 (19,8 %) — ajouté depuis à AUTO_SURCHARGE_CODES. Sa base de calcul
+//     a été précisée le 23/09/2026 : tarif de base + sûreté/qualité + Région Parisienne
+//     (quand applicable) — PAS la Transition Énergétique. On vérifie ici le cas sans
+//     Région Parisienne (dept 01) : base = tarif de base + sûreté uniquement.
 // ---------------------------------------------------------------------
 $fixture01 = $findRate($json['less_100kg_rates'], '01', 1.0);
 $r = $calc->calculate('01', 5.0, new DateTimeImmutable('2026-11-15')); // hors saison, isole le supplément gazole
@@ -229,9 +231,9 @@ foreach ($r['supplements'] as $s) {
 }
 $t->assertTrue('13a. Supplément ajustement gazole (19,8%) appliqué', $fuelSupplement !== null);
 $t->assertSame(
-    round((float) $fixture01['price_ht'] * $fuelPct / 100.0, 2),
+    round(((float) $fixture01['price_ht'] + $safetyAmount) * $fuelPct / 100.0, 2),
     $fuelSupplement['amount'] ?? null,
-    '13b. Montant gazole = 19,8% du tarif de base HT (taux confirmé par le gestionnaire, pas recalculé depuis un exemple de fichier)'
+    '13b. Montant gazole = 19,8% x (tarif de base + sûreté/qualité), département hors Région Parisienne'
 );
 
 // ---------------------------------------------------------------------
@@ -259,6 +261,30 @@ foreach ($rNoParis['supplements'] as $s) {
     }
 }
 $t->assertTrue('13e. Supplément Région Parisienne absent pour un département hors liste (01)', $hasParisOutsideList === false);
+
+// ---------------------------------------------------------------------
+// 13f. Cas réel Wissous (91320 -> dept 91, 23 kg) — la base du gazole doit inclure la
+//     Région Parisienne en plus de la sûreté/qualité, confirmé le 23/09/2026 après
+//     réconciliation avec la facture réelle du gestionnaire.
+// ---------------------------------------------------------------------
+$fixture91_20 = $findRate($json['less_100kg_rates'], '91', 20.0);
+$fuelSupplement91 = null;
+foreach ($rParis['supplements'] as $s) {
+    if ($s['code'] === OklaSchenkerRateCalculator::SURCHARGE_FUEL_ADJUSTMENT) {
+        $fuelSupplement91 = $s;
+    }
+}
+$t->assertTrue('13f. Supplément gazole appliqué pour Wissous (dept 91)', $fuelSupplement91 !== null);
+$t->assertSame(
+    round(((float) $fixture91_20['price_ht'] + $safetyAmount + $parisRegionAmount) * $fuelPct / 100.0, 2),
+    $fuelSupplement91['amount'] ?? null,
+    '13g. Montant gazole = 19,8% x (tarif de base + sûreté/qualité + Région Parisienne), cas réel Wissous'
+);
+$t->assertSame(
+    round((float) $fixture91_20['price_ht'] + $safetyAmount + $energyAmount + $parisRegionAmount + $fuelSupplement91['amount'], 2),
+    $rParis['total_price_ht'],
+    '13h. Total HT = tarif de base + sûreté + énergie + Région Parisienne + gazole (formule corrigée)'
+);
 
 // ---------------------------------------------------------------------
 // 14. Panier multicolis — l'agrégation de poids multi-colis est de la responsabilité

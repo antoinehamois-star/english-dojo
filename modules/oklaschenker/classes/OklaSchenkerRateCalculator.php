@@ -134,14 +134,27 @@ class OklaSchenkerRateCalculator
         $trace['base_price_ht'] = $baseHt;
 
         $supplements = [];
+        $supplementsByCode = [];
         $runningTotal = $baseHt;
 
-        foreach (self::AUTO_SURCHARGE_CODES as $code) {
+        // Ordre volontaire : FUEL_ADJUSTMENT doit être calculé APRÈS SAFETY_QUALITY et
+        // PARIS_REGION, dont les montants entrent dans sa base de calcul (confirmé par
+        // le gestionnaire le 23/09/2026 — voir computeSurchargeAmount()).
+        $orderedCodes = [
+            self::SURCHARGE_URBAN_ZONE,
+            self::SURCHARGE_SEASONAL,
+            self::SURCHARGE_SAFETY_QUALITY,
+            self::SURCHARGE_ENERGY_CONTRIBUTION,
+            self::SURCHARGE_PARIS_REGION,
+            self::SURCHARGE_FUEL_ADJUSTMENT,
+        ];
+
+        foreach ($orderedCodes as $code) {
             if (!$this->repository->isSurchargeEnabled($code)) {
                 continue;
             }
 
-            $amount = $this->computeSurchargeAmount($code, $department, $baseHt, $calculationDate);
+            $amount = $this->computeSurchargeAmount($code, $department, $baseHt, $calculationDate, $supplementsByCode);
             if ($amount === null) {
                 continue;
             }
@@ -150,6 +163,7 @@ class OklaSchenkerRateCalculator
                 'code' => $code,
                 'amount' => $amount,
             ];
+            $supplementsByCode[$code] = $amount;
             $runningTotal += $amount;
         }
 
@@ -160,7 +174,12 @@ class OklaSchenkerRateCalculator
         return $trace;
     }
 
-    private function computeSurchargeAmount(string $code, string $department, float $baseHt, \DateTimeImmutable $calculationDate): ?float
+    /**
+     * @param array<string,float> $supplementsByCode Montants déjà calculés dans cette
+     *     même trace (code => montant), pour les suppléments dont la base de calcul
+     *     dépend d'autres suppléments (voir SURCHARGE_FUEL_ADJUSTMENT ci-dessous).
+     */
+    private function computeSurchargeAmount(string $code, string $department, float $baseHt, \DateTimeImmutable $calculationDate, array $supplementsByCode = []): ?float
     {
         switch ($code) {
             case self::SURCHARGE_URBAN_ZONE:
@@ -205,16 +224,21 @@ class OklaSchenkerRateCalculator
                 return $definition !== null ? round((float) $definition['amount'], 2) : null;
 
             case self::SURCHARGE_FUEL_ADJUSTMENT:
-                // Pourcentage fixe du tarif de base, appliqué par expédition, sans
-                // restriction saisonnière (confirmé par le gestionnaire — voir la
-                // constante SURCHARGE_FUEL_ADJUSTMENT).
+                // Base de calcul confirmée par le gestionnaire le 23/09/2026 : tarif de
+                // base + sûreté/qualité + Région Parisienne (quand applicable) — PAS la
+                // Transition Énergétique, non mentionnée par le gestionnaire. D'où
+                // l'ordre de calcul dans calculate() : SAFETY_QUALITY et PARIS_REGION
+                // sont toujours calculés avant FUEL_ADJUSTMENT.
                 $definition = $this->repository->getSurchargeDefinition($code);
                 if ($definition === null) {
                     return null;
                 }
                 $pct = (float) $definition['amount'];
+                $fuelBase = $baseHt
+                    + ($supplementsByCode[self::SURCHARGE_SAFETY_QUALITY] ?? 0.0)
+                    + ($supplementsByCode[self::SURCHARGE_PARIS_REGION] ?? 0.0);
 
-                return round($baseHt * $pct / 100.0, 2);
+                return round($fuelBase * $pct / 100.0, 2);
 
             default:
                 return null;

@@ -206,6 +206,18 @@
    `SURCHARGE_FUEL_ADJUSTMENT`) et le test 13 mis à jour dans
    `tests/RateCalculatorTest.php`.
 
+   **Complément du 23/09/2026** : après réconciliation du cas Wissous/91320
+   avec la facture réelle, le gestionnaire a précisé que la base de calcul du
+   gazole n'est pas le seul tarif de base, mais **tarif de base + sûreté/
+   qualité + Région Parisienne (quand applicable)** — explicitement PAS la
+   Transition Énergétique. `calculate()` calcule désormais `SAFETY_QUALITY`
+   et `PARIS_REGION` avant `FUEL_ADJUSTMENT` et transmet leurs montants à
+   `computeSurchargeAmount()` via le paramètre `$supplementsByCode`, pour que
+   le gazole s'appuie sur les montants réels de ce calcul plutôt que sur une
+   base recalculée séparément. Cas Wissous (dept 91, 23 kg) recalculé :
+   25,96 (base) + 1,30 (sûreté) + 1,05 (énergie) + 6,36 (Région Parisienne) +
+   6,66 (gazole = 19,8 % × (25,96+1,30+6,36)) = **41,33 € HT**.
+
 ## Hors périmètre — assumé, pas un manque
 
 6. **Aucun appel SOAP, aucune réservation, aucune étiquette** : exclu

@@ -39,9 +39,12 @@ individuellement :
 - `SEASONAL` — ajustement saisonnier (1er juin → 31 août).
 - `SAFETY_QUALITY` — contribution sûreté et qualité.
 - `ENERGY_CONTRIBUTION` — contribution Transition Énergétique.
-- `FUEL_ADJUSTMENT` — ajustement gazole, 19,8 % du tarif de base HT, ajouté le
-  22/09/2026 (taux communiqué directement par le gestionnaire — absent du
-  fichier source initial, voir `docs/RAPPORT_POINTS_BLOQUANTS.md`).
+- `FUEL_ADJUSTMENT` — ajustement gazole, 19,8 %, ajouté le 22/09/2026 (taux
+  communiqué directement par le gestionnaire — absent du fichier source
+  initial, voir `docs/RAPPORT_POINTS_BLOQUANTS.md`). Base de calcul précisée
+  le 23/09/2026 : **tarif de base + sûreté/qualité + Région Parisienne**
+  (quand applicable) — PAS la Transition Énergétique. Calculé après ces
+  suppléments, jamais avant (voir `OklaSchenkerRateCalculator::calculate()`).
 - `PARIS_REGION` — Région Parisienne, 6,36 € forfait par expédition, ajouté le
   22/09/2026, liste de départements **distincte** de la zone urbaine (75, 76,
   77, 78, 91, 92, 93, 94, 95 — voir section 4ter). Les deux suppléments se
